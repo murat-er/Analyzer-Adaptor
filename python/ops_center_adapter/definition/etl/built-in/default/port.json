@@ -1,0 +1,172 @@
+{
+  "type": "custom_logic",
+  "etlKey": "port",
+  "definition": {
+    "logicFactoryClass": "com.hitachi.software.ias.spectre.core.etl.ctl.iaa.impl.def.custom.BackwardCompatibleEtlDefinitionFactory",
+    "factoryParameter": {
+      "loadTargetMeasurement": "storage_port",
+      "extractTargets": [
+        {
+          "recordName": "PI_PTS",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "DATETIME",
+            "PORT_NUMBER",
+            "CHA_NAME",
+            "PORT_NAME",
+            "PORT_ROLE",
+            "AVG_IO_RATE",
+            "AVG_XFER_RATE",
+            "MAX_IO_RATE",
+            "MAX_XFER_RATE",
+            "INITIATOR_AVG_XFER_RATE"
+          ],
+          "indexes": [
+          ]
+        },
+        {
+          "recordName": "PD_PTC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "PORT_NAME",
+            "PORT_SPEED"
+          ],
+          "indexes": [
+            [
+              "PORT_NAME"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_PTCX",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "PORT_NAME",
+            "NEGOTIATED_PORT_SPEED"
+          ],
+          "indexes": [
+            [
+              "PORT_NAME"
+            ]
+          ]
+        }
+      ],
+      "transformCandidates": [
+        {
+          "conditionSql": "SELECT CASE WHEN COUNT(*) >= 1 THEN TRUE ELSE FALSE END AS CONDITION FROM PD_PTCX_LATEST",
+          "conditionColumn": "CONDITION",
+          "sql": "SELECT PI_PTS.DATETIME, PI_PTS.PORT_NUMBER, PI_PTS.PORT_ROLE, PI_PTS.CHA_NAME, PI_PTS.PORT_NAME, PI_PTS.AVG_IO_RATE, PI_PTS.AVG_XFER_RATE, PI_PTS.MAX_IO_RATE, PI_PTS.MAX_XFER_RATE, PD_PTC_LATEST.PORT_SPEED, PD_PTCX_LATEST.NEGOTIATED_PORT_SPEED, CASE PI_PTS.PORT_ROLE WHEN 'Bidirectional' THEN PI_PTS.INITIATOR_AVG_XFER_RATE WHEN 'Initiator' THEN PI_PTS.AVG_XFER_RATE ELSE NULL END AS AVG_INITIATOR_XFER_RATE, FROM PI_PTS JOIN PD_PTC_LATEST ON PI_PTS.PORT_NAME = PD_PTC_LATEST.PORT_NAME JOIN PD_PTCX_LATEST ON PI_PTS.PORT_NAME = PD_PTCX_LATEST.PORT_NAME;",
+          "usePreviousMapping": false,
+          "timestampColName": "DATETIME",
+          "tagKeyToColNames": [
+            {
+              "tagKey": "port_number",
+              "queryColName": "PORT_NUMBER"
+            },
+            {
+              "tagKey": "port_name",
+              "queryColName": "PORT_NAME"
+            },
+            {
+              "tagKey": "port_role",
+              "queryColName": "PORT_ROLE"
+            },
+            {
+              "tagKey": "cha_name",
+              "queryColName": "CHA_NAME"
+            },
+            {
+              "tagKey": "port_speed",
+              "queryColName": "PORT_SPEED"
+            },
+            {
+              "tagKey": "negotiated_port_speed",
+              "queryColName": "NEGOTIATED_PORT_SPEED"
+            }
+          ],
+          "fieldKeyToColNames": [
+            {
+              "fieldKey": "avg_of_total_io_per_sec",
+              "queryColName": "AVG_IO_RATE"
+            },
+            {
+              "fieldKey": "avg_of_transfer_mebibytes_per_sec",
+              "queryColName": "AVG_XFER_RATE"
+            },
+            {
+              "fieldKey": "peak_of_io_per_sec",
+              "queryColName": "MAX_IO_RATE"
+            },
+            {
+              "fieldKey": "peak_of_transfer_mebibytes_per_sec",
+              "queryColName": "MAX_XFER_RATE"
+            },
+            {
+              "fieldKey": "avg_of_initiator_transfer_mebibytes_per_sec",
+              "queryColName": "AVG_INITIATOR_XFER_RATE"
+            }
+          ]
+        },
+        {
+          "conditionSql": "SELECT TRUE AS CONDITION",
+          "conditionColumn": "CONDITION",
+          "sql": "SELECT PI_PTS.DATETIME, PI_PTS.PORT_NUMBER, PI_PTS.PORT_ROLE, PI_PTS.CHA_NAME, PI_PTS.PORT_NAME, PI_PTS.AVG_IO_RATE, PI_PTS.AVG_XFER_RATE, PI_PTS.MAX_IO_RATE, PI_PTS.MAX_XFER_RATE, PD_PTC_LATEST.PORT_SPEED, CASE PI_PTS.PORT_ROLE WHEN 'Bidirectional' THEN PI_PTS.INITIATOR_AVG_XFER_RATE WHEN 'Initiator' THEN PI_PTS.AVG_XFER_RATE ELSE NULL END AS AVG_INITIATOR_XFER_RATE, FROM PI_PTS JOIN PD_PTC_LATEST ON PI_PTS.PORT_NAME = PD_PTC_LATEST.PORT_NAME;",
+          "usePreviousMapping": false,
+          "timestampColName": "DATETIME",
+          "tagKeyToColNames": [
+            {
+              "tagKey": "port_number",
+              "queryColName": "PORT_NUMBER"
+            },
+            {
+              "tagKey": "port_name",
+              "queryColName": "PORT_NAME"
+            },
+            {
+              "tagKey": "port_role",
+              "queryColName": "PORT_ROLE"
+            },
+            {
+              "tagKey": "cha_name",
+              "queryColName": "CHA_NAME"
+            },
+            {
+              "tagKey": "port_speed",
+              "queryColName": "PORT_SPEED"
+            }
+          ],
+          "fieldKeyToColNames": [
+            {
+              "fieldKey": "avg_of_total_io_per_sec",
+              "queryColName": "AVG_IO_RATE"
+            },
+            {
+              "fieldKey": "avg_of_transfer_mebibytes_per_sec",
+              "queryColName": "AVG_XFER_RATE"
+            },
+            {
+              "fieldKey": "peak_of_io_per_sec",
+              "queryColName": "MAX_IO_RATE"
+            },
+            {
+              "fieldKey": "peak_of_transfer_mebibytes_per_sec",
+              "queryColName": "MAX_XFER_RATE"
+            },
+            {
+              "fieldKey": "avg_of_initiator_transfer_mebibytes_per_sec",
+              "queryColName": "AVG_INITIATOR_XFER_RATE"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

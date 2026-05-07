@@ -1,0 +1,79 @@
+{
+  "type": "simple",
+  "etlKey": "storage_ldev_detail",
+  "definition": {
+    "loadTargetMeasurement": "storage",
+    "extractTargets": [
+      {
+        "recordName": "PI_LDE",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "RANDOM_READ_IO_RATE",
+          "RANDOM_WRITE_IO_RATE",
+          "SEQUENTIAL_READ_IO_RATE",
+          "SEQUENTIAL_WRITE_IO_RATE",
+          "RANDOM_READ_XFER_RATE",
+          "RANDOM_WRITE_XFER_RATE",
+          "SEQUENTIAL_READ_XFER_RATE",
+          "SEQUENTIAL_WRITE_XFER_RATE"
+        ],
+        "indexes": [
+          [
+            "DATETIME"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, CAST(SUM(RANDOM_READ_IO_RATE) AS DOUBLE PRECISION) as TOTAL_RANDOM_READ_IO_RATE, CAST(SUM(RANDOM_WRITE_IO_RATE) AS DOUBLE PRECISION) as TOTAL_RANDOM_WRITE_IO_RATE, CAST(SUM(SEQUENTIAL_READ_IO_RATE) AS DOUBLE PRECISION) as TOTAL_SEQUENTIAL_READ_IO_RATE, CAST(SUM(SEQUENTIAL_WRITE_IO_RATE) AS DOUBLE PRECISION) as TOTAL_SEQUENTIAL_WRITE_IO_RATE, CAST(SUM(RANDOM_READ_IO_RATE) AS DOUBLE PRECISION) + CAST(SUM(RANDOM_WRITE_IO_RATE) AS DOUBLE PRECISION) + CAST(SUM(SEQUENTIAL_READ_IO_RATE) AS DOUBLE PRECISION) + CAST(SUM(SEQUENTIAL_WRITE_IO_RATE) AS DOUBLE PRECISION) AS TOTAL_IO_RATE, CAST(SUM(RANDOM_READ_XFER_RATE) AS DOUBLE PRECISION) as TOTAL_RANDOM_READ_XFER_RATE, CAST(SUM(RANDOM_WRITE_XFER_RATE) AS DOUBLE PRECISION) as TOTAL_RANDOM_WRITE_XFER_RATE, CAST(SUM(SEQUENTIAL_READ_XFER_RATE) AS DOUBLE PRECISION) as TOTAL_SEQUENTIAL_READ_XFER_RATE, CAST(SUM(SEQUENTIAL_WRITE_XFER_RATE) AS DOUBLE PRECISION) as TOTAL_SEQUENTIAL_WRITE_XFER_RATE, CAST(SUM(RANDOM_READ_XFER_RATE) AS DOUBLE PRECISION) + CAST(SUM(RANDOM_WRITE_XFER_RATE) AS DOUBLE PRECISION) + CAST(SUM(SEQUENTIAL_READ_XFER_RATE) AS DOUBLE PRECISION) + CAST(SUM(SEQUENTIAL_WRITE_XFER_RATE) AS DOUBLE PRECISION) AS TOTAL_XFER_RATE from PI_LDE GROUP BY DATETIME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_random_read_io_per_sec",
+          "queryColName": "TOTAL_RANDOM_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_write_io_per_sec",
+          "queryColName": "TOTAL_RANDOM_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_read_io_per_sec",
+          "queryColName": "TOTAL_SEQUENTIAL_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_write_io_per_sec",
+          "queryColName": "TOTAL_SEQUENTIAL_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_io_per_sec",
+          "queryColName": "TOTAL_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_read_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_RANDOM_READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_write_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_RANDOM_WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_read_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_SEQUENTIAL_READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_write_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_SEQUENTIAL_WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_XFER_RATE"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "type": "simple",
+  "etlKey": "remote_path_conf",
+  "definition": {
+    "loadTargetMeasurement": "storage_remote_path_conf",
+    "extractTargets": [
+      {
+        "recordName": "PD_RPHC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "REMOTE_SERIAL_NUMBER",
+          "REMOTE_DKC_MODEL",
+          "PATH_GROUP_ID",
+          "LOCAL_PORT_NAME",
+          "REMOTE_PORT_NAME"
+        ],
+        "indexes": [
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, REMOTE_SERIAL_NUMBER, REMOTE_DKC_MODEL, PATH_GROUP_ID, LOCAL_PORT_NAME, REMOTE_PORT_NAME, '' AS DUMMY FROM PD_RPHC;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "remote_storage_serial_number",
+          "queryColName": "REMOTE_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "remote_storage_model",
+          "queryColName": "REMOTE_DKC_MODEL"
+        },
+        {
+          "tagKey": "path_group_id",
+          "queryColName": "PATH_GROUP_ID"
+        },
+        {
+          "tagKey": "local_port_name",
+          "queryColName": "LOCAL_PORT_NAME"
+        },
+        {
+          "tagKey": "remote_port_name",
+          "queryColName": "REMOTE_PORT_NAME"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "dummy",
+          "queryColName": "DUMMY"
+        }
+      ]
+    }
+  }
+}
