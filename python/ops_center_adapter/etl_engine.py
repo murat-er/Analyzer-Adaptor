@@ -179,7 +179,11 @@ class EtlEngine:
             )
             
             if response.status_code == 200:
-                return response.json().get('data', [])
+                try:
+                    return response.json().get('data', [])
+                except Exception:
+                    logger.warning(f"Empty response: {response.text[:100]}")
+                    return []
             else:
                 logger.warning(f"API returned {response.status_code}: {response.text[:200]}")
                 return []
