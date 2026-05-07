@@ -136,20 +136,31 @@ class EtlEngine:
         
         url = f"{base_url}/objects/{record_name}"
         
-        # Fields separator is %1F (unit separator), not comma
+        # Fields separator is %1F (unit separator), NOT URL-encoded
+        # Send as-is, don't let requests encode it
         fields_separator = '%1F'
         
-        params = {
-            'agentType': 'RAID',
-            'pfmHostName': instance_host,
-            'agentInstanceName': instance.get('instance_name', instance.get('id', '')),
-            'fields': fields_separator.join(fields),
-        }
+        import base64
+        
+        # Build URL manually to avoid encoding issues
+        # Format: http://host:24221/TuningAgent/v1/objects/{record}?agentType=RAID&pfmHostName={host}&agentInstanceName={id}&fields=...&startTime=...&endTime=...
+        fields_value = fields_separator.join(fields)
+        
+        # Build query string manually - don't use params dict to avoid encoding
+        query_parts = [
+            f"agentType=RAID",
+            f"pfmHostName={instance_host.upper()}",
+            f"agentInstanceName={instance.get('instance_name', instance.get('id', ''))}",
+            f"fields={fields_value}",
+        ]
         
         # Add time range for historical data
         if extract_type and extract_type[0] == 'history':
-            params['startTime'] = time_range[0].strftime('%Y-%m-%dT%H:%MZ')
-            params['endTime'] = time_range[1].strftime('%Y-%m-%dT%H:%MZ')
+            query_parts.append(f"startTime={time_range[0].strftime('%Y-%m-%dT%H:%MZ')}")
+            query_parts.append(f"endTime={time_range[1].strftime('%Y-%m-%dT%H:%MZ')}")
+        
+        query_string = '&'.join(query_parts)
+        full_url = f"{url}?{query_string}"
         
         headers = {
             'Content-Type': 'application/json',
@@ -157,14 +168,12 @@ class EtlEngine:
         
         # Add authentication if configured
         if self._config.ops_center_user:
-            import base64
             credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
             headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode()).decode()}"
         
         try:
             response = self._session.get(
-                url,
-                params=params,
+                full_url,
                 headers=headers,
                 timeout=30
             )
