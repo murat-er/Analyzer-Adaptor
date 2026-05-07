@@ -44,7 +44,7 @@ def parse_args():
         help='Run in scheduled/cron mode'
     )
     parser.add_argument(
-        '--continuous', '-c',
+        '--continuous',
         action='store_true',
         help='Run continuously until stopped (for daemon mode)'
     )
