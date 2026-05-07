@@ -30,12 +30,9 @@ def setup_logging(debug: bool = False):
 
 
 def get_log_file_path() -> Path:
-    """Get path to log file.
-    
-    Returns:
-        Path to log file
-    """
-    log_dir = Path('./ops_center_adapter/log')
+    """Get path to log file."""
+    base_dir = Path(__file__).parent.parent
+    log_dir = base_dir / 'log'
     log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir / 'adapter.log'
 

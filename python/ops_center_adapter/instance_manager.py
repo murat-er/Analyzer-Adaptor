@@ -38,7 +38,9 @@ class InstanceManager:
         
     def _setup_directories(self):
         """Create required directories if they don't exist."""
-        instance_dir = Path('./ops_center_adapter/agent_instance')
+        # Get the base directory (parent of ops_center_adapter)
+        base_dir = Path(__file__).parent.parent
+        instance_dir = base_dir / 'agent_instance'
         instance_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Instance directory: {instance_dir}")
     
@@ -125,7 +127,8 @@ class InstanceManager:
     
     def _save_instance_files(self):
         """Save instances to instance_host and instance_names files."""
-        instance_dir = Path('./ops_center_adapter/agent_instance')
+        base_dir = Path(__file__).parent.parent
+        instance_dir = base_dir / 'agent_instance'
         
         with open(instance_dir / 'instance_names', 'w') as f:
             for instance in self._instances:
@@ -161,7 +164,8 @@ class InstanceManager:
     
     def _load_from_files(self):
         """Load instances from existing files."""
-        instance_dir = Path('./ops_center_adapter/agent_instance')
+        base_dir = Path(__file__).parent.parent
+        instance_dir = base_dir / 'agent_instance'
         
         instance_names = self._load_instance_names(instance_dir / 'instance_names')
         instance_hosts = self._load_instance_hosts(instance_dir / 'instance_host')

@@ -26,7 +26,8 @@ class RaidAgentReporter:
         self._results: List[Dict[str, Any]] = []
         self._start_time = datetime.utcnow()
         
-        result_dir = Path('./ops_center_adapter/result')
+        base_dir = Path(__file__).parent.parent
+        result_dir = base_dir / 'result'
         result_dir.mkdir(parents=True, exist_ok=True)
         
         self._result_file = result_dir / 'raid_agent'

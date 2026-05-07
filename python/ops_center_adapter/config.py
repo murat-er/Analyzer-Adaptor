@@ -46,10 +46,12 @@ class Config:
     
     def _setup_directories(self):
         """Create required directories."""
-        os.makedirs('./ops_center_adapter/etc', exist_ok=True)
-        os.makedirs('./ops_center_adapter/agent_instance', exist_ok=True)
-        os.makedirs('./ops_center_adapter/result', exist_ok=True)
-        os.makedirs('./ops_center_adapter/log', exist_ok=True)
+        # Get base directory relative to config.py location
+        base_dir = Path(__file__).parent.parent
+        os.makedirs(base_dir / 'etc', exist_ok=True)
+        os.makedirs(base_dir / 'agent_instance', exist_ok=True)
+        os.makedirs(base_dir / 'result', exist_ok=True)
+        os.makedirs(base_dir / 'log', exist_ok=True)
     
     def _load_config(self):
         """Load configuration from file and environment."""
