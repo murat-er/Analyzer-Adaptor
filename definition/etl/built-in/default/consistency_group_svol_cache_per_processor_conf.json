@@ -1,0 +1,84 @@
+{
+  "type": "simple",
+  "etlKey": "consistency_group_svol_cache_per_processor_conf",
+  "definition": {
+    "loadTargetMeasurement": "storage_consistency_group_svol_cache_per_processor_conf",
+    "extractTargets": [
+      {
+        "recordName": "PD",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DKC_SERIAL_NUMBER"
+        ],
+        "indexes": [
+        ]
+      },
+      {
+        "recordName": "PD_LDCC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "CTG_ID",
+          "S_VOL_DKC_SERIAL_NUMBER",
+          "S_VOL_LDEV_NUMBER"
+        ],
+        "indexes": [
+          [
+            "S_VOL_DKC_SERIAL_NUMBER"
+          ],
+          [
+            "S_VOL_LDEV_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_LDC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "CLPR_NUMBER",
+          "MP_BLADE"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DISTINCT PD_LDC.DATETIME, PD_LDCC_LATEST.CTG_ID, PD_LDCC_LATEST.S_VOL_LDEV_NUMBER, CLPR_NUMBER, MP_BLADE, '' AS DUMMY FROM PD_LDCC_LATEST JOIN PD_LATEST ON PD_LDCC_LATEST.S_VOL_DKC_SERIAL_NUMBER = PD_LATEST.DKC_SERIAL_NUMBER JOIN PD_LDC ON PD_LDC.LDEV_NUMBER = PD_LDCC_LATEST.S_VOL_LDEV_NUMBER WHERE PD_LDCC_LATEST.CTG_ID IS NOT NULL;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "consistency_group_id",
+          "queryColName": "CTG_ID"
+        },
+        {
+          "tagKey": "ldev_number",
+          "queryColName": "S_VOL_LDEV_NUMBER"
+        },
+        {
+          "tagKey": "cache_number",
+          "queryColName": "CLPR_NUMBER"
+        },
+        {
+          "tagKey": "processor_name",
+          "queryColName": "MP_BLADE"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "dummy",
+          "queryColName": "DUMMY"
+        }
+      ]
+    }
+  }
+}

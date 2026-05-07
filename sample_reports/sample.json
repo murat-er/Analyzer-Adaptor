@@ -1,0 +1,3701 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_INFLUXDB",
+      "label": "influxdb",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "influxdb",
+      "pluginName": "InfluxDB"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "11.0.11"
+    },
+    {
+      "type": "datasource",
+      "id": "influxdb",
+      "name": "InfluxDB",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "Sample Dashboard for Ops Center Analyzer Adapter",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 26,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "# ${__dashboard}\n\nSample Dashboard for Ops Center Analyzer Adapter",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.11",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 3
+      },
+      "id": 64,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "## All Storage Systems Report\n\nCompare all storage systems",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.11",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Total IOPS per storage system",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 6
+      },
+      "id": 53,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_instance_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"sum_of_total_io_per_sec\") AS \"Total IOPS\" FROM \"storage\" WHERE $timeFilter GROUP BY time($__interval), \"instance_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Total IOPS"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "IOPS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Average response time per storage system",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 6
+      },
+      "id": 54,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_instance_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    max(\"avg_of_response_time_in_micro_sec\")\nFROM(\n        SELECT\n            (\"avg_of_read_response_time_in_micro_sec\" + \"avg_of_write_response_time_in_micro_sec\") / 2 AS \"avg_of_response_time_in_micro_sec\"\n        FROM\n            \"storage\"\n    )\nWHERE\n    $timeFilter\nGROUP BY\n    time($__interval),\n    \"instance_name\"::tag\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "avg_of_read_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "avg_of_write_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "Response Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Total transfer rate per storage system",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MiBs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 6
+      },
+      "id": 55,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_instance_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"sum_of_total_transfer_mebibytes_per_sec\") AS \"Total Transfer Rate\" FROM \"storage\" WHERE $timeFilter GROUP BY time($__interval), \"instance_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_transfer_mebibytes_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Total Transfer Rate"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": []
+        }
+      ],
+      "title": "Transfer Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Total pool usage per storage system",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 6
+      },
+      "id": 62,
+      "maxPerRow": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_instance_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "pool_display_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_pool",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    last(\"sum_of_pool_physical_usage_in_percent\") AS \"Total Pool Usage\"\nFROM\n    (\n        SELECT\n            \"sum_of_pool_physical_usage_in_gibibyte\" / \"sum_of_pool_total_physical_capacity_in_gibibyte\" * 100 AS \"sum_of_pool_physical_usage_in_percent\"\n        FROM\n            \"storage\"\n        )\nWHERE\n    $timeFilter\nGROUP BY\n    time($__interval),\n    \"instance_name\"::tag\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "total_physical_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "subscribed_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Subscription"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "physical_usage_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Used"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "slimit": "100",
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "pool_display_name::tag",
+              "operator": "=~",
+              "value": "/^$Pool$/"
+            }
+          ]
+        }
+      ],
+      "title": "Pool Usage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
+      "id": 65,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "## Selected Storage System Report\n\nAnalyze resources of the selected storage system (${Storage})",
+        "mode": "markdown"
+      },
+      "pluginVersion": "11.0.11",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 36,
+      "panels": [],
+      "title": "Storage System ($Storage)",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 18
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"sum_of_total_io_per_sec\") AS \"Total IOPS\" FROM \"storage\" WHERE (\"instance_name\"::tag =~ /^$Storage$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Total IOPS"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": "IOPS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 18
+      },
+      "id": 27,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"avg_of_read_response_time_in_micro_sec\") AS \"Average Read Response Time\", max(\"avg_of_write_response_time_in_micro_sec\") AS \"Average Write Response Time\" FROM \"storage\" WHERE (\"instance_name\"::tag =~ /^$Storage$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "avg_of_read_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Average Read Response Time"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "avg_of_write_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Average Write Response Time"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": "Response Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MiBs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 18
+      },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"sum_of_total_transfer_mebibytes_per_sec\") AS \"Total Transfer Rate\" FROM \"storage\" WHERE (\"instance_name\"::tag =~ /^$Storage$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_transfer_mebibytes_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Total Transfer Rate"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": "Transfer Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 18
+      },
+      "id": 63,
+      "maxPerRow": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "pool_display_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_pool",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    last(\"sum_of_pool_physical_usage_in_percent\") AS \"Total Pool Usage\"\nFROM\n    (\n        SELECT\n            \"sum_of_pool_physical_usage_in_gibibyte\" / \"sum_of_pool_total_physical_capacity_in_gibibyte\" * 100 AS \"sum_of_pool_physical_usage_in_percent\"\n        FROM\n            \"storage\"\n        )\nWHERE\n        $timeFilter\n        AND \"instance_name\"::tag =~ /^$Storage$/\nGROUP BY\n    time($__interval),\n    \"instance_name\"::tag\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "total_physical_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "subscribed_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Subscription"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "physical_usage_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Used"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "slimit": "100",
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "pool_display_name::tag",
+              "operator": "=~",
+              "value": "/^$Pool$/"
+            }
+          ]
+        }
+      ],
+      "title": "Pool Usage",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 26
+      },
+      "id": 37,
+      "panels": [],
+      "title": "Processors, Caches and Ports in $Storage",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 27
+      },
+      "id": 33,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_processor_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "processor_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_processor",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"busy_rate_in_percent\") AS \"Busy Rate\" FROM \"storage_processor\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"processor_name\"::tag =~ /^$Processor$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag, \"processor_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "busy_rate_in_percent"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Busy Rate"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "processor_name::tag",
+              "operator": "=~",
+              "value": "/^$Processor$/"
+            }
+          ]
+        }
+      ],
+      "title": "Processor Busy Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 27
+      },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "Processor: $tag_processor_name, Cache: CLPR$tag_cache_number",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "processor_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "cache_number::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_cache_per_processor",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"cache_write_pending_in_percent\") AS \"Cache Write Pending Rate\" FROM \"storage_cache_per_processor\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"processor_name\"::tag =~ /^$Processor$/ AND \"cache_number\"::tag =~ /^$Cache$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag, \"processor_name\"::tag, \"cache_number\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "cache_write_pending_in_percent"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Cache Write Pending Rate"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "processor_name::tag",
+              "operator": "=~",
+              "value": "/^$Processor$/"
+            },
+            {
+              "condition": "AND",
+              "key": "cache_number::tag",
+              "operator": "=~",
+              "value": "/^$Cache$/"
+            }
+          ]
+        }
+      ],
+      "title": "Cache Write Pending Rate",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "MiBs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 27
+      },
+      "id": 47,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_port_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "port_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "storage_port",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"peak_of_transfer_mebibytes_per_sec\") AS \"Peak Transfer Rate\" FROM \"storage_port\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"port_name\"::tag =~ /^$worst_avg_xfer_port$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag, \"port_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "peak_of_transfer_mebibytes_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Peak Transfer Rate"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "port_name::tag",
+              "operator": "=~",
+              "value": "/^$worst_avg_xfer_port$/"
+            }
+          ]
+        }
+      ],
+      "title": "Port Transfer Rate (Top $top_count)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 35
+      },
+      "id": 49,
+      "panels": [],
+      "title": "Pools in $Storage",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Sum of capacity of the selected pools",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "gbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 61,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    max(\"total_physical_total_capacity_in_gbytes\") as \"Phys. Total\",\n    max(\"total_subscription_capacity_in_gbytes\") as \"Subscription\",\n    max(\"total_physical_used_capacity_in_gbytes\") as \"Phys. Used\"\nFROM\n(\n        SELECT\n            sum(\"subscribed_capacity_in_gibibyte\") as \"total_subscription_capacity_in_gbytes\",\n            sum(\"physical_usage_in_gibibyte\") as \"total_physical_used_capacity_in_gbytes\",\n            sum(\"total_physical_capacity_in_gibibyte\") as \"total_physical_total_capacity_in_gbytes\"\n        FROM\n            \"storage_pool\"\n        WHERE\n            \"instance_name\" =~ /^$Storage$/\n            AND \"pool_display_name\" =~ /^$Pool$/\n        GROUP BY\n            \"instance_name\"\n    )\nWHERE\n    $timeFilter\nGROUP BY\n    time($__interval)\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_pool_total_physical_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "sum_of_pool_subscribed_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Subscription"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "sum_of_pool_physical_usage_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Used"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": "Pool Capacity",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "id": 30,
+      "maxPerRow": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$tag_pool_display_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "pool_display_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_pool",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    last(\"physical_usage_in_percent\") AS \"Pool Usage\"\nFROM\n    (\n        SELECT\n            \"physical_usage_in_gibibyte\" / \"total_physical_capacity_in_gibibyte\" * 100 as \"physical_usage_in_percent\"\n        FROM\n            \"storage_pool\"\n        )\nWHERE\n    \"instance_name\"::tag =~ /^$Storage$/\n    AND \"pool_display_name\"::tag =~ /^$worst_usage_pool$/\n    AND $timeFilter\nGROUP BY\n    time($__interval),\n    \"instance_name\"::tag,\n    \"pool_display_name\"::tag\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "total_physical_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "subscribed_capacity_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Subscription"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "physical_usage_in_gibibyte"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Phys. Used"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "slimit": "100",
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "pool_display_name::tag",
+              "operator": "=~",
+              "value": "/^$Pool$/"
+            }
+          ]
+        }
+      ],
+      "title": "Pool Usage (Top $top_count)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Average IOPS during the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": false,
+            "inspect": false,
+            "minWidth": 50
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Pool"
+            },
+            "properties": [
+              {
+                "id": "custom.filterable",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 44
+      },
+      "id": 50,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "sum"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Total"
+          }
+        ]
+      },
+      "pluginVersion": "11.0.11",
+      "targets": [
+        {
+          "alias": "$tag_pool_display_name",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "pool_display_name::tag"
+              ],
+              "type": "tag"
+            }
+          ],
+          "hide": false,
+          "measurement": "storage_pool",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"sum_of_total_io_per_sec\") AS \"Total\", mean(\"sum_of_read_io_per_sec\") AS \"Read\", mean(\"sum_of_write_io_per_sec\") AS \"Write\" FROM \"storage_pool\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"pool_display_name\"::tag =~ /^$worst_usage_pool$/) AND $timeFilter GROUP BY \"instance_name\"::tag, \"pool_display_name\"::tag",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Total"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "sum_of_read_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "sum_of_write_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": " IOPS (All Pools)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "instance_name": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Read": 4,
+              "Time": 0,
+              "Total": 3,
+              "Write": 5,
+              "instance_name": 1,
+              "pool_display_name": 2
+            },
+            "renameByName": {
+              "pool_display_name": "Pool"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 44
+      },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col ($tag_pool_display_name)",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "pool_display_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "hide": false,
+          "measurement": "storage_pool",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"sum_of_total_io_per_sec\") AS \"Total\" FROM \"storage_pool\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"pool_display_name\"::tag =~ /^$worst_iops_pool$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag, \"pool_display_name\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "sum_of_total_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Total"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "pool_display_name::tag",
+              "operator": "=~",
+              "value": "/^$worst_iops_pool$/"
+            }
+          ]
+        }
+      ],
+      "title": "Pool IOPS (Top $top_count)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "id": 57,
+      "panels": [],
+      "title": "Volumes in $Storage",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Average IOPS during the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": false
+            },
+            "filterable": false,
+            "inspect": false,
+            "minWidth": 50
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Volume"
+            },
+            "properties": [
+              {
+                "id": "custom.filterable",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 53
+      },
+      "id": 35,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "mean"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Total"
+          }
+        ]
+      },
+      "pluginVersion": "11.0.11",
+      "targets": [
+        {
+          "alias": "",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "ldev_number::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "storage_ldev",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    mean(\"total_io_per_sec\") AS \"Total\",\n    mean(\"read_io_per_sec\") AS \"Read\",\n    mean(\"write_io_per_sec\") AS \"Write\"   \nFROM\n    (\n        SELECT\n            (\"read_io_per_sec\" + \"write_io_per_sec\") AS \"total_io_per_sec\", \n            \"read_io_per_sec\",\n            \"write_io_per_sec\"\n        FROM\n            \"storage_ldev\"\n        WHERE\n            \"instance_name\"::tag =~ /^$Storage$/\n    )\nWHERE\n    $timeFilter\nGROUP BY\n    \"instance_name\"::tag,\n    \"ldev_number\"::tag",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "read_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "write_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "ldev_number::tag",
+              "operator": "=~",
+              "value": "/^$Volume$/"
+            }
+          ]
+        }
+      ],
+      "title": "IOPS (All Volumes)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "instance_name": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Read": 4,
+              "Time": 0,
+              "Total": 3,
+              "Write": 5,
+              "instance_name": 1,
+              "ldev_number": 2
+            },
+            "renameByName": {
+              "instance_name": "Storage",
+              "ldev_number": "Volume"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "IOPS of the selected volumes",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "iops"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 53
+      },
+      "id": 42,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean",
+            "last"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col ($tag_ldev_number)",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "ldev_number::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_ldev",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT\n    max(\"total_io_per_sec\") AS \"Total\"\nFROM\n    (\n        SELECT\n            \"read_io_per_sec\" + \"write_io_per_sec\" AS \"total_io_per_sec\"\n        FROM\n            \"storage_ldev\"\n        WHERE\n            \"instance_name\"::tag =~ /^$Storage$/\n            AND \"ldev_number\"::tag =~ /^$Volume$/\n            AND $timeFilter\n        )\nWHERE $timeFilter\nGROUP BY\n    time($__interval),\n    \"instance_name\"::tag,\n    \"ldev_number\"::tag\nfill(none)",
+          "rawQuery": true,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "read_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "write_io_per_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "ldev_number::tag",
+              "operator": "=~",
+              "value": "/^$Volume$/"
+            }
+          ]
+        }
+      ],
+      "title": "Volume IOPS",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Average response time during the selected time range",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto",
+              "wrapText": false
+            },
+            "filterable": false,
+            "inspect": false,
+            "minWidth": 100
+          },
+          "fieldMinMax": false,
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Volume"
+            },
+            "properties": [
+              {
+                "id": "custom.filterable",
+                "value": true
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 61
+      },
+      "id": 43,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "enablePagination": true,
+          "fields": "",
+          "reducer": [
+            "mean"
+          ],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "Read"
+          }
+        ]
+      },
+      "pluginVersion": "11.0.11",
+      "targets": [
+        {
+          "alias": "",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "ldev_number::tag"
+              ],
+              "type": "tag"
+            }
+          ],
+          "measurement": "storage_ldev",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT mean(\"read_response_time_in_micro_sec\") AS \"Read\", mean(\"write_response_time_in_micro_sec\") AS \"Write\" FROM \"storage_ldev\" WHERE (\"instance_name\"::tag =~ /^$Storage$/) AND $timeFilter GROUP BY \"instance_name\"::tag, \"ldev_number\"::tag",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "table",
+          "select": [
+            [
+              {
+                "params": [
+                  "read_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "write_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "mean"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            }
+          ]
+        }
+      ],
+      "title": "Response Time (All Volumes)",
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "instance_name": true
+            },
+            "includeByName": {},
+            "indexByName": {
+              "Read": 3,
+              "Time": 0,
+              "Write": 4,
+              "instance_name": 1,
+              "ldev_number": 2
+            },
+            "renameByName": {
+              "instance_name": "Storage",
+              "ldev_number": "Volume"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "influxdb",
+        "uid": "${DataSource}"
+      },
+      "description": "Response time of the selected volumes",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "µs"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 16,
+        "x": 8,
+        "y": 61
+      },
+      "id": 34,
+      "options": {
+        "legend": {
+          "calcs": [
+            "max",
+            "mean"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "tooltip": {
+          "hideZeros": false,
+          "maxHeight": 600,
+          "mode": "multi",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "11.5.2",
+      "targets": [
+        {
+          "alias": "$col ($tag_ldev_number)",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "${DataSource}"
+          },
+          "groupBy": [
+            {
+              "params": [
+                "$__interval"
+              ],
+              "type": "time"
+            },
+            {
+              "params": [
+                "instance_name::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "ldev_number::tag"
+              ],
+              "type": "tag"
+            },
+            {
+              "params": [
+                "none"
+              ],
+              "type": "fill"
+            }
+          ],
+          "measurement": "storage_ldev",
+          "orderByTime": "ASC",
+          "policy": "default",
+          "query": "SELECT max(\"read_response_time_in_micro_sec\") AS \"Read\", max(\"write_response_time_in_micro_sec\") AS \"Write\" FROM \"storage_ldev\" WHERE (\"instance_name\"::tag =~ /^$Storage$/ AND \"ldev_number\"::tag =~ /^$Volume$/) AND $timeFilter GROUP BY time($__interval), \"instance_name\"::tag, \"ldev_number\"::tag fill(none)",
+          "rawQuery": false,
+          "refId": "A",
+          "resultFormat": "time_series",
+          "select": [
+            [
+              {
+                "params": [
+                  "read_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Read"
+                ],
+                "type": "alias"
+              }
+            ],
+            [
+              {
+                "params": [
+                  "write_response_time_in_micro_sec"
+                ],
+                "type": "field"
+              },
+              {
+                "params": [],
+                "type": "max"
+              },
+              {
+                "params": [
+                  "Write"
+                ],
+                "type": "alias"
+              }
+            ]
+          ],
+          "tags": [
+            {
+              "condition": "AND",
+              "key": "instance_name::tag",
+              "operator": "=~",
+              "value": "/^$Storage$/"
+            },
+            {
+              "condition": "AND",
+              "key": "ldev_number::tag",
+              "operator": "=~",
+              "value": "/^$Volume$/"
+            }
+          ]
+        }
+      ],
+      "title": "Volume Response Time",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 39,
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "allowCustomValue": true,
+        "hide": 0,
+        "includeAll": false,
+        "label": "Data Source",
+        "multi": false,
+        "name": "DataSource",
+        "options": [],
+        "query": "influxdb",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "allowCustomValue": true,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage\" WITH KEY = \"instance_name\" WHERE $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": false,
+        "name": "Storage",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage\" WITH KEY = \"instance_name\" WHERE $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage_processor\" WITH KEY =\"processor_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "Processor",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage_processor\" WITH KEY =\"processor_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage_cache_per_processor\" WITH KEY =\"cache_number\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "Cache",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage_cache_per_processor\" WITH KEY =\"cache_number\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage_port\" WITH KEY =\"port_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "Port",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage_port\" WITH KEY =\"port_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage_pool\" WITH KEY =\"pool_display_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": true,
+        "multi": true,
+        "name": "Pool",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage_pool\" WITH KEY =\"pool_display_name\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allowCustomValue": true,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SHOW TAG VALUES FROM \"storage_ldev\" WITH KEY =\"ldev_number\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "description": "",
+        "hide": 0,
+        "includeAll": false,
+        "multi": true,
+        "name": "Volume",
+        "options": [],
+        "query": "SHOW TAG VALUES FROM \"storage_ldev\" WITH KEY =\"ldev_number\" WHERE \"instance_name\" =~ /^${Storage}$/ AND $timeFilter",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SELECT\n    \"pool_display_name\"\nFROM\n    (\n        SELECT\n            \"pool_display_name\",\n            top(\"max_total_total_iops\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"sum_of_total_io_per_sec\") as \"max_total_total_iops\"\n                FROM\n                    \"storage_pool\"\n                WHERE\n                    $timeFilter\n                    AND instance_name =~ /$Storage/\n                    AND pool_display_name =~ /$Pool/\n                GROUP BY\n                    \"instance_name\",\n                    \"pool_display_name\"\n            )\n    )",
+        "hide": 2,
+        "includeAll": true,
+        "multi": false,
+        "name": "worst_iops_pool",
+        "options": [],
+        "query": "SELECT\n    \"pool_display_name\"\nFROM\n    (\n        SELECT\n            \"pool_display_name\",\n            top(\"max_total_total_iops\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"sum_of_total_io_per_sec\") as \"max_total_total_iops\"\n                FROM\n                    \"storage_pool\"\n                WHERE\n                    $timeFilter\n                    AND instance_name =~ /$Storage/\n                    AND pool_display_name =~ /$Pool/\n                GROUP BY\n                    \"instance_name\",\n                    \"pool_display_name\"\n            )\n    )",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "allowCustomValue": false,
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SELECT\n    \"port_name\"\nFROM\n(\n        SELECT\n            \"port_name\",\n            top(\"worst_xfer_rate\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"avg_of_transfer_mebibytes_per_sec\") as \"worst_xfer_rate\"\n                FROM\n                    \"storage_port\"\n                WHERE\n                    $timeFilter\n                    AND \"instance_name\" =~ /^$Storage$/\n                    AND \"port_name\" =~ /^$Port$/\n                GROUP BY\n                    \"instance_name\",\n                    \"port_name\"\n            )\n    )",
+        "hide": 2,
+        "includeAll": true,
+        "multi": false,
+        "name": "worst_avg_xfer_port",
+        "options": [],
+        "query": "SELECT\n    \"port_name\"\nFROM\n(\n        SELECT\n            \"port_name\",\n            top(\"worst_xfer_rate\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"avg_of_transfer_mebibytes_per_sec\") as \"worst_xfer_rate\"\n                FROM\n                    \"storage_port\"\n                WHERE\n                    $timeFilter\n                    AND \"instance_name\" =~ /^$Storage$/\n                    AND \"port_name\" =~ /^$Port$/\n                GROUP BY\n                    \"instance_name\",\n                    \"port_name\"\n            )\n    )",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "${DataSource}"
+        },
+        "definition": "SELECT\n    \"pool_display_name\"\nFROM\n    (\n        SELECT\n            \"pool_display_name\",\n            top(\"max_physical_usage_percent\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"physical_usage_in_percent\") as \"max_physical_usage_percent\"\n                FROM\n                    (\n                        SELECT\n                            \"physical_usage_in_gibibyte\" / \"total_physical_capacity_in_gibibyte\" * 100 as \"physical_usage_in_percent\"\n                        FROM\n                            \"storage_pool\"\n                        )\n                WHERE\n                    $timeFilter\n                    AND instance_name =~ /$Storage/\n                    AND pool_display_name =~ /$Pool/\n                GROUP BY\n                    \"instance_name\",\n                    \"pool_display_name\"\n            )\n    )",
+        "hide": 2,
+        "includeAll": true,
+        "multi": false,
+        "name": "worst_usage_pool",
+        "options": [],
+        "query": "SELECT\n    \"pool_display_name\"\nFROM\n    (\n        SELECT\n            \"pool_display_name\",\n            top(\"max_physical_usage_percent\", $top_count)\n        FROM\n            (\n                SELECT\n                    max(\"physical_usage_in_percent\") as \"max_physical_usage_percent\"\n                FROM\n                    (\n                        SELECT\n                            \"physical_usage_in_gibibyte\" / \"total_physical_capacity_in_gibibyte\" * 100 as \"physical_usage_in_percent\"\n                        FROM\n                            \"storage_pool\"\n                        )\n                WHERE\n                    $timeFilter\n                    AND instance_name =~ /$Storage/\n                    AND pool_display_name =~ /$Pool/\n                GROUP BY\n                    \"instance_name\",\n                    \"pool_display_name\"\n            )\n    )",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "10",
+          "value": "10"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Top count to display",
+        "multi": false,
+        "name": "top_count",
+        "options": [
+          {
+            "selected": true,
+            "text": "10",
+            "value": "10"
+          },
+          {
+            "selected": false,
+            "text": "20",
+            "value": "20"
+          },
+          {
+            "selected": false,
+            "text": "30",
+            "value": "30"
+          },
+          {
+            "selected": false,
+            "text": "40",
+            "value": "40"
+          },
+          {
+            "selected": false,
+            "text": "50",
+            "value": "50"
+          },
+          {
+            "selected": false,
+            "text": "100",
+            "value": "100"
+          }
+        ],
+        "query": "10, 20, 30, 40, 50, 100",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "timeRangeUpdatedDuringEditOrView": false,
+  "timepicker": {},
+  "timezone": "",
+  "title": "Hitachi VSP One Block",
+  "uid": "hitachi-vsp-one-block-sample",
+  "version": 1,
+  "weekStart": ""
+}

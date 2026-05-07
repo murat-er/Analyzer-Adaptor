@@ -1,0 +1,186 @@
+{
+  "type": "custom_logic",
+  "etlKey": "ldev_all_read_write_response",
+  "definition": {
+    "logicFactoryClass": "com.hitachi.software.ias.spectre.core.etl.ctl.iaa.impl.def.custom.BackwardCompatibleEtlDefinitionFactory",
+    "factoryParameter": {
+      "loadTargetMeasurement": "storage_ldev",
+      "extractTargets": [
+        {
+          "recordName": "PI_LDS",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "DATETIME",
+            "LDEV_NUMBER",
+            "READ_RESPONSE_RATE",
+            "READ_IO_RATE",
+            "READ_XFER_RATE",
+            "READ_MBYTES",
+            "READ_IO_COUNT",
+            "WRITE_RESPONSE_RATE",
+            "WRITE_IO_RATE",
+            "WRITE_XFER_RATE",
+            "WRITE_MBYTES",
+            "WRITE_IO_COUNT"
+          ],
+          "indexes": [
+            [
+              "DATETIME",
+              "LDEV_NUMBER"
+            ]
+          ]
+        },
+        {
+          "recordName": "PI_LDE",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "DATETIME",
+            "LDEV_NUMBER",
+            "RANDOM_READ_IO_RATE",
+            "RANDOM_WRITE_IO_RATE"
+          ],
+          "indexes": [
+            [
+              "DATETIME",
+              "LDEV_NUMBER"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_LHGC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "HOST_GROUP_NAME",
+            "LDEV_NUMBER"
+          ],
+          "indexes": [
+            [
+              "LDEV_NUMBER"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_LDC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "LDEV_NUMBER",
+            "NVM_SUBSYSTEM_ID",
+            "NVM_NAMESPACE_ID"
+          ],
+          "indexes": [
+            [
+              "LDEV_NUMBER"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_NNPC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "NVM_HOST_NQN",
+            "NVM_SUBSYSTEM_ID",
+            "NVM_NAMESPACE_ID"
+          ],
+          "indexes": [
+            [
+              "NVM_SUBSYSTEM_ID",
+              "NVM_NAMESPACE_ID"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_NHC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "NVM_HOST_NQN",
+            "NVM_HOST_NICKNAME"
+          ],
+          "indexes": [
+            [
+              "NVM_HOST_NQN"
+            ]
+          ]
+        }
+      ],
+      "transformCandidates": [
+        {
+          "conditionSql": "SELECT CASE WHEN COUNT(*) >= 1 THEN TRUE ELSE FALSE END AS CONDITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PD_LDC_LATEST' AND COLUMN_NAME = 'NVM_NAMESPACE_ID'",
+          "conditionColumn": "CONDITION",
+          "sql": "WITH LDEV_CONF AS ( SELECT PI_LDS.DATETIME AS DATETIME, PI_LDS.LDEV_NUMBER AS LDEV_NUMBER, GROUP_CONCAT( DISTINCT PD_LHGC_LATEST.HOST_GROUP_NAME ORDER BY PD_LHGC_LATEST.HOST_GROUP_NAME SEPARATOR ', ' ) AS HOST_GROUPS, GROUP_CONCAT( DISTINCT PD_NHC_LATEST.NVM_HOST_NICKNAME ORDER BY PD_NHC_LATEST.NVM_HOST_NICKNAME SEPARATOR ', ' ) AS NVM_HOST_NICKNAMES FROM PI_LDS LEFT OUTER JOIN PD_LHGC_LATEST ON PI_LDS.LDEV_NUMBER = PD_LHGC_LATEST.LDEV_NUMBER LEFT OUTER JOIN PD_LDC_LATEST ON PI_LDS.LDEV_NUMBER = PD_LDC_LATEST.LDEV_NUMBER LEFT OUTER JOIN PD_NNPC_LATEST ON PD_LDC_LATEST.NVM_NAMESPACE_ID = PD_NNPC_LATEST.NVM_NAMESPACE_ID AND PD_LDC_LATEST.NVM_SUBSYSTEM_ID = PD_NNPC_LATEST.NVM_SUBSYSTEM_ID LEFT OUTER JOIN ( SELECT PD_NHC_LATEST.NVM_HOST_NQN, CASE WHEN PD_NHC_LATEST.NVM_HOST_NICKNAME IS NOT NULL THEN PD_NHC_LATEST.NVM_HOST_NICKNAME ELSE PD_NHC_LATEST.NVM_HOST_NQN END AS NVM_HOST_NICKNAME FROM PD_NHC_LATEST ) AS PD_NHC_LATEST ON PD_NNPC_LATEST.NVM_HOST_NQN = PD_NHC_LATEST.NVM_HOST_NQN GROUP BY PI_LDS.DATETIME, PI_LDS.LDEV_NUMBER ) SELECT LDEV_CONF.DATETIME AS DATETIME, LDEV_CONF.LDEV_NUMBER, LDEV_CONF.HOST_GROUPS, LDEV_CONF.NVM_HOST_NICKNAMES, CASE PI_LDS.READ_IO_COUNT WHEN 0 THEN NULL ELSE PI_LDS.READ_RESPONSE_RATE END AS READ_RESPONSE_RATE, PI_LDS.READ_IO_RATE, CASE PI_LDS.READ_IO_COUNT WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDS.READ_MBYTES AS DOUBLE PRECISION) / PI_LDS.READ_IO_COUNT AS DOUBLE PRECISION ) END AS READ_XFER_PER_IO, CASE PI_LDS.WRITE_IO_COUNT WHEN 0 THEN NULL ELSE PI_LDS.WRITE_RESPONSE_RATE END AS WRITE_RESPONSE_RATE, PI_LDS.WRITE_IO_RATE, CASE PI_LDS.WRITE_IO_COUNT WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDS.WRITE_MBYTES AS DOUBLE PRECISION) / PI_LDS.WRITE_IO_COUNT AS DOUBLE PRECISION ) END AS WRITE_XFER_PER_IO, CASE PI_LDS.READ_IO_RATE WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDE.RANDOM_READ_IO_RATE AS DOUBLE PRECISION) / CAST(PI_LDS.READ_IO_RATE AS DOUBLE PRECISION) AS DOUBLE PRECISION ) END AS RANDOM_READ_TO_READ_IO_RATIO, CASE PI_LDS.WRITE_IO_RATE WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDE.RANDOM_WRITE_IO_RATE AS DOUBLE PRECISION) / CAST(PI_LDS.WRITE_IO_RATE AS DOUBLE PRECISION) AS DOUBLE PRECISION ) END AS RANDOM_WRITE_IO_TO_WRITE_IO_RATIO FROM LDEV_CONF JOIN PI_LDS ON LDEV_CONF.DATETIME = PI_LDS.DATETIME AND LDEV_CONF.LDEV_NUMBER = PI_LDS.LDEV_NUMBER JOIN PI_LDE ON LDEV_CONF.DATETIME = PI_LDE.DATETIME AND LDEV_CONF.LDEV_NUMBER = PI_LDE.LDEV_NUMBER;",
+          "usePreviousMapping": false,
+          "timestampColName": "DATETIME",
+          "tagKeyToColNames": [
+            {
+              "tagKey": "ldev_number",
+              "queryColName": "LDEV_NUMBER"
+            },
+            {
+              "tagKey": "associated_host_groups",
+              "queryColName": "HOST_GROUPS"
+            },
+            {
+              "tagKey": "associated_nvm_host_nicknames",
+              "queryColName": "NVM_HOST_NICKNAMES"
+            }
+          ],
+          "fieldKeyToColNames": [
+            {
+              "fieldKey": "read_response_time_in_micro_sec",
+              "queryColName": "READ_RESPONSE_RATE"
+            },
+            {
+              "fieldKey": "read_io_per_sec",
+              "queryColName": "READ_IO_RATE"
+            },
+            {
+              "fieldKey": "read_transfer_mebibytes_per_io",
+              "queryColName": "READ_XFER_PER_IO"
+            },
+            {
+              "fieldKey": "random_read_io_to_read_io_ratio",
+              "queryColName": "RANDOM_READ_TO_READ_IO_RATIO"
+            },
+            {
+              "fieldKey": "write_response_time_in_micro_sec",
+              "queryColName": "WRITE_RESPONSE_RATE"
+            },
+            {
+              "fieldKey": "write_io_per_sec",
+              "queryColName": "WRITE_IO_RATE"
+            },
+            {
+              "fieldKey": "write_transfer_mebibytes_per_io",
+              "queryColName": "WRITE_XFER_PER_IO"
+            },
+            {
+              "fieldKey": "random_write_io_to_write_io_ratio",
+              "queryColName": "RANDOM_WRITE_IO_TO_WRITE_IO_RATIO"
+            }
+          ]
+        },
+        {
+          "conditionSql": "SELECT TRUE AS CONDITION",
+          "conditionColumn": "CONDITION",
+          "sql": "WITH LDEV_CONF AS ( SELECT PI_LDS.DATETIME AS DATETIME, PI_LDS.LDEV_NUMBER AS LDEV_NUMBER, GROUP_CONCAT( DISTINCT PD_LHGC_LATEST.HOST_GROUP_NAME ORDER BY PD_LHGC_LATEST.HOST_GROUP_NAME SEPARATOR ', ' ) AS HOST_GROUPS FROM PI_LDS LEFT OUTER JOIN PD_LHGC_LATEST ON PI_LDS.LDEV_NUMBER = PD_LHGC_LATEST.LDEV_NUMBER GROUP BY PI_LDS.DATETIME, PI_LDS.LDEV_NUMBER ) SELECT LDEV_CONF.DATETIME AS DATETIME, LDEV_CONF.LDEV_NUMBER, LDEV_CONF.HOST_GROUPS, CASE PI_LDS.READ_IO_COUNT WHEN 0 THEN NULL ELSE PI_LDS.READ_RESPONSE_RATE END AS READ_RESPONSE_RATE, PI_LDS.READ_IO_RATE, CASE PI_LDS.READ_IO_COUNT WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDS.READ_MBYTES AS DOUBLE PRECISION) / PI_LDS.READ_IO_COUNT AS DOUBLE PRECISION ) END AS READ_XFER_PER_IO CASE PI_LDS.WRITE_IO_COUNT WHEN 0 THEN NULL ELSE PI_LDS.WRITE_RESPONSE_RATE END AS WRITE_RESPONSE_RATE, PI_LDS.WRITE_IO_RATE, CASE PI_LDS.WRITE_IO_COUNT WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDS.WRITE_MBYTES AS DOUBLE PRECISION) / PI_LDS.WRITE_IO_COUNT AS DOUBLE PRECISION ) END AS WRITE_XFER_PER_IO, CASE PI_LDS.READ_IO_RATE WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDE.RANDOM_READ_IO_RATE AS DOUBLE PRECISION) / CAST(PI_LDS.READ_IO_RATE AS DOUBLE PRECISION) AS DOUBLE PRECISION ) END AS RANDOM_READ_TO_READ_IO_RATIO, CASE PI_LDS.WRITE_IO_RATE WHEN 0 THEN NULL ELSE CAST( CAST(PI_LDE.RANDOM_WRITE_IO_RATE AS DOUBLE PRECISION) / CAST(PI_LDS.WRITE_IO_RATE AS DOUBLE PRECISION) AS DOUBLE PRECISION ) END AS RANDOM_WRITE_IO_TO_WRITE_IO_RATIO FROM LDEV_CONF JOIN PI_LDS ON LDEV_CONF.DATETIME = PI_LDS.DATETIME AND LDEV_CONF.LDEV_NUMBER = PI_LDS.LDEV_NUMBER JOIN PI_LDE ON LDEV_CONF.DATETIME = PI_LDE.DATETIME AND LDEV_CONF.LDEV_NUMBER = PI_LDE.LDEV_NUMBER;",
+          "usePreviousMapping": true
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "type": "custom_logic",
+  "etlKey": "logging_num_of_ldevs",
+  "transformPriority": 200,
+  "definition": {
+    "logicFactoryClass": "com.hitachi.software.ias.spectre.core.etl.ctl.iaa.impl.def.custom.LatestFieldLoggingDefinitionFactory",
+    "factoryParameter": {
+      "measurement": "storage",
+      "field": "num_of_ldevs",
+      "maxLength": 200
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "type": "simple",
+  "etlKey": "journal_ldev_conf",
+  "definition": {
+    "loadTargetMeasurement": "storage_journal_ldev_conf",
+    "extractTargets": [
+      {
+        "recordName": "PD_LDD",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "JOURNAL_ID",
+          "LDEV_NUMBER"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER",
+            "JOURNAL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_LDC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "CLPR_NUMBER",
+          "MP_BLADE"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PD_LDC.DATETIME, PD_LDD_LATEST.JOURNAL_ID, PD_LDC.LDEV_NUMBER, PD_LDC.CLPR_NUMBER, PD_LDC.MP_BLADE FROM PD_LDC JOIN PD_LDD_LATEST ON PD_LDC.LDEV_NUMBER = PD_LDD_LATEST.LDEV_NUMBER WHERE PD_LDD_LATEST.JOURNAL_ID != '';",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "journal_id",
+          "queryColName": "JOURNAL_ID"
+        },
+        {
+          "tagKey": "ldev_number",
+          "queryColName": "LDEV_NUMBER"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "cache_number",
+          "queryColName": "CLPR_NUMBER"
+        },
+        {
+          "fieldKey": "processor_name",
+          "queryColName": "MP_BLADE"
+        }
+      ]
+    }
+  }
+}

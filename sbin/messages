@@ -1,0 +1,34 @@
+# @param1 cli
+# @param2 interval
+readonly OPTION_SYNTAX_ERR_MSG="KNAQ60400-E Syntax error. No value or an invalid value is specified.
+Please see the following and try again."
+
+readonly KNAQ60401E="KNAQ60401-E Failed to create a temporary file. The system environment might be corrupted. Retry the operation.
+If the same error occurs, use the data collection tool to collect the necessary data and contact your customer support."
+
+readonly KNAQ60402E="KNAQ60402-E You need to run this as a root user."
+
+# @param1 key(ETL_COLLECTION_INTERVAL_IN_MINUTES or ETL_COLLECTION_ENABLED)
+readonly KNAQ60403E="KNAQ60403-E Missing \"%s\" key (internal).
+The system environment might be corrupted. Retry the operation.
+If the same error occurs, use the data collection tool to collect the necessary data and contact your customer support."
+
+# @param1 key(ETL_COLLECTION_ENABLED)
+readonly ETL_COLLECTION_ENABLED_INVALID_VALUE_ERR_MSG="
+KNAQ60404-E Invalid \"%s\" key value (internal).
+The system environment might be corrupted. Retry the operation.
+If the same error occurs, use the data collection tool to collect the necessary data and contact your customer support."
+
+# @param1 key(minutes)
+readonly INVALID_VALUE_ERR_MSG="KNAQ60405-E Invalid \"%s\" value. Revise and try again."
+
+readonly KNAQ60406I="KNAQ60406-I Data collection interval updated."
+readonly KNAQ60407I="KNAQ60407-I Scheduled etl enabled."
+readonly KNAQ60408I="KNAQ60408-I Scheduled etl disabled."
+
+
+### Use IDs of 60450 or later for the adapter-specific shell messages
+readonly KNAQ60450I="KNAQ60450-I The InfluxDB configuration does not exist. Please register it with registerdb.sh."
+
+readonly KNAQ60451E="KNAQ60451-E Process execution failed. Check the RAID Agent status and try again.
+If the same error occurs, use the data collection tool to collect the necessary data and contact your customer support."

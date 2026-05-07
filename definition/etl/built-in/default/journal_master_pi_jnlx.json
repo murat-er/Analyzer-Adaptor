@@ -1,0 +1,78 @@
+{
+  "type": "simple",
+  "etlKey": "journal_master_pi_jnlx",
+  "definition": {
+    "loadTargetMeasurement": "storage_journal_master",
+    "extractTargets": [
+      {
+        "recordName": "PI_JNLX",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "JOURNAL_ID",
+          "MASTER_JNL_DATA_USAGE"
+        ],
+        "indexes": [
+          [
+            "JOURNAL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DKC_SERIAL_NUMBER"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_LDCC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "P_VOL_DKC_SERIAL_NUMBER",
+          "P_VOL_DKC_MODEL",
+          "M_JOURNAL_ID"
+        ],
+        "indexes": [
+          [
+            "P_VOL_DKC_SERIAL_NUMBER"
+          ],
+          [
+            "M_JOURNAL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PI_JNLX.DATETIME, PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.P_VOL_DKC_MODEL, PD_LDCC_LATEST.M_JOURNAL_ID, PI_JNLX.MASTER_JNL_DATA_USAGE FROM PD_LDCC_LATEST JOIN PD_LATEST ON PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER = PD_LATEST.DKC_SERIAL_NUMBER JOIN PI_JNLX ON PD_LDCC_LATEST.M_JOURNAL_ID = PI_JNLX.JOURNAL_ID;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "storage_serial_number",
+          "queryColName": "P_VOL_DKC_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "storage_model",
+          "queryColName": "P_VOL_DKC_MODEL"
+        },
+        {
+          "tagKey": "journal_id",
+          "queryColName": "M_JOURNAL_ID"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "usage_in_percent",
+          "queryColName": "MASTER_JNL_DATA_USAGE"
+        }
+      ]
+    }
+  }
+}

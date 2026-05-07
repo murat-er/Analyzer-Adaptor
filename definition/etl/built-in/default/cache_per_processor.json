@@ -1,0 +1,43 @@
+{
+  "type": "simple",
+  "etlKey": "cache_per_processor_performance",
+  "definition": {
+    "loadTargetMeasurement": "storage_cache_per_processor",
+    "extractTargets": [
+      {
+        "recordName": "PI_CLMS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "MP_BLADE_ID",
+          "CLPR_NUMBER",
+          "CACHE_WRITE_PENDING_RATE"
+        ],
+        "indexes": [
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, CLPR_NUMBER, MP_BLADE_ID, CACHE_WRITE_PENDING_RATE FROM PI_CLMS;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "cache_number",
+          "queryColName": "CLPR_NUMBER"
+        },
+        {
+          "tagKey": "processor_name",
+          "queryColName": "MP_BLADE_ID"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "cache_write_pending_in_percent",
+          "queryColName": "CACHE_WRITE_PENDING_RATE"
+        }
+      ]
+    }
+  }
+}
