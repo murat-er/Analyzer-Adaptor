@@ -1,0 +1,81 @@
+{
+  "type": "simple",
+  "etlKey": "storage_tier",
+  "definition": {
+    "loadTargetMeasurement": "storage_pool_tier",
+    "extractTargets": [
+      {
+        "recordName": "PD_PLTC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "POOL_ID",
+          "TIER_TYPE",
+          "PHYSICAL_FMC_CAPACITY_TOTAL",
+          "PHYSICAL_FMC_CAPACITY_USED",
+          "PHYSICAL_FMC_CAPACITY_FREE",
+          "PHYSICAL_FMC_CAP_USAGE_RATE"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "POOL_ID",
+          "POOL_NAME"
+        ],
+        "indexes": [
+          [
+            "POOL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PD_PLTC.DATETIME, PD_PLTC.POOL_ID, PD_PLTC.TIER_TYPE, PD_PLTC.PHYSICAL_FMC_CAPACITY_TOTAL, PD_PLTC.PHYSICAL_FMC_CAPACITY_USED, PD_PLTC.PHYSICAL_FMC_CAPACITY_FREE, PD_PLTC.PHYSICAL_FMC_CAP_USAGE_RATE, CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN PD_PLTC.POOL_ID ELSE PD_PLC_LATEST.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN '-' ELSE PD_PLC_LATEST.POOL_NAME END, '(', PD_PLTC.POOL_ID, ')') AS POOL_DISPLAY_NAME FROM PD_PLTC JOIN PD_PLC_LATEST ON PD_PLTC.POOL_ID = PD_PLC_LATEST.POOL_ID;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "pool_id",
+          "queryColName": "POOL_ID"
+        },
+        {
+          "tagKey": "pool_name",
+          "queryColName": "NULL_IGNORED_POOL_NAME"
+        },
+        {
+          "tagKey": "pool_display_name",
+          "queryColName": "POOL_DISPLAY_NAME"
+        },
+        {
+          "tagKey": "tier_type",
+          "queryColName": "TIER_TYPE"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "total_physical_capacity_in_gibibyte",
+          "queryColName": "PHYSICAL_FMC_CAPACITY_TOTAL"
+        },
+        {
+          "fieldKey": "free_physical_capacity_in_gibibyte",
+          "queryColName": "PHYSICAL_FMC_CAPACITY_FREE"
+        },
+        {
+          "fieldKey": "physical_usage_in_gibibyte",
+          "queryColName": "PHYSICAL_FMC_CAPACITY_USED"
+        },
+        {
+          "fieldKey": "physical_usage_in_percent",
+          "queryColName": "PHYSICAL_FMC_CAP_USAGE_RATE"
+        }
+      ]
+    }
+  }
+}

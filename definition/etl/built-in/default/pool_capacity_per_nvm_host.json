@@ -1,0 +1,143 @@
+{
+  "type": "optional",
+  "etlKey": "pool_capacity_per_nvm_host",
+  "definition": {
+    "loadTargetMeasurement": "storage_pool_capacity_per_nvm_host",
+    "extractTargets": [
+      {
+        "recordName": "PD_VVC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "COLLECTION_TIME",
+          "LDEV_NUMBER",
+          "POOL_ID",
+          "FREE_CAPACITY",
+          "USED_CAPACITY",
+          "VIRTUAL_VOLUME_CAPACITY"
+        ],
+        "indexes": [
+          [
+            "COLLECTION_TIME",
+            "POOL_ID"
+          ],
+          [
+            "COLLECTION_TIME",
+            "LDEV_NUMBER"
+          ],
+          [
+            "DATETIME",
+            "POOL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "COLLECTION_TIME",
+          "POOL_ID",
+          "POOL_NAME"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_LDC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "NVM_SUBSYSTEM_ID",
+          "NVM_NAMESPACE_ID"
+        ],
+        "indexes": [
+          [
+          "LDEV_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_NNPC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "NVM_HOST_NQN",
+          "NVM_SUBSYSTEM_ID",
+          "NVM_NAMESPACE_ID"
+        ],
+        "indexes": [
+          [
+           "NVM_SUBSYSTEM_ID",
+           "NVM_NAMESPACE_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_NHC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "COLLECTION_TIME",
+          "NVM_HOST_NQN",
+          "NVM_HOST_NICKNAME"
+        ],
+        "indexes": [
+          [
+           "COLLECTION_TIME",
+           "NVM_HOST_NQN"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "optionalTables": [
+        "PD_NNPC_LATEST",
+        "PD_NHC"
+      ],
+      "sql": "WITH HOST_AND_LDEV AS( SELECT DISTINCT PD_NHC.COLLECTION_TIME, PD_LDC_LATEST.LDEV_NUMBER, CASE WHEN PD_NHC.NVM_HOST_NICKNAME IS NOT NULL THEN PD_NHC.NVM_HOST_NICKNAME ELSE PD_NHC.NVM_HOST_NQN END AS NVM_HOST_NICKNAME FROM PD_LDC_LATEST JOIN PD_NNPC_LATEST ON PD_LDC_LATEST.NVM_NAMESPACE_ID = PD_NNPC_LATEST.NVM_NAMESPACE_ID AND PD_LDC_LATEST.NVM_SUBSYSTEM_ID = PD_NNPC_LATEST.NVM_SUBSYSTEM_ID JOIN PD_NHC ON PD_NNPC_LATEST.NVM_HOST_NQN = PD_NHC.NVM_HOST_NQN ) SELECT PD_VVC.DATETIME, PD_VVC.POOL_ID, CAST(SUM(PD_VVC.FREE_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_FREE_CAPACITY, CAST(SUM(PD_VVC.USED_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_USED_CAPACITY, CAST(SUM(PD_VVC.VIRTUAL_VOLUME_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_VIRTUAL_VOLUME_CAPACITY, CASE WHEN PD_PLC.POOL_NAME IS NULL THEN PD_PLC.POOL_ID ELSE PD_PLC.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC.POOL_NAME IS NULL THEN '-' ELSE PD_PLC.POOL_NAME END, '(', PD_PLC.POOL_ID, ')' ) AS POOL_DISPLAY_NAME, HOST_AND_LDEV.NVM_HOST_NICKNAME FROM PD_VVC JOIN PD_PLC ON PD_VVC.COLLECTION_TIME = PD_PLC.COLLECTION_TIME AND PD_VVC.POOL_ID = PD_PLC.POOL_ID JOIN HOST_AND_LDEV ON PD_VVC.COLLECTION_TIME = HOST_AND_LDEV.COLLECTION_TIME AND PD_VVC.LDEV_NUMBER = HOST_AND_LDEV.LDEV_NUMBER GROUP BY PD_VVC.DATETIME, PD_VVC.POOL_ID, PD_PLC.POOL_NAME, HOST_AND_LDEV.NVM_HOST_NICKNAME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "pool_id",
+          "queryColName": "POOL_ID"
+        },
+        {
+          "tagKey": "pool_name",
+          "queryColName": "NULL_IGNORED_POOL_NAME"
+        },
+        {
+          "tagKey": "pool_display_name",
+          "queryColName": "POOL_DISPLAY_NAME"
+        },
+        {
+          "tagKey": "nvm_host_nickname",
+          "queryColName": "NVM_HOST_NICKNAME"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_virtual_volume_free_capacity_in_gibibyte",
+          "queryColName": "SUM_FREE_CAPACITY"
+        },
+        {
+          "fieldKey": "sum_of_virtual_volume_used_capacity_in_gibibyte",
+          "queryColName": "SUM_USED_CAPACITY"
+        },
+        {
+          "fieldKey": "sum_of_virtual_volume_subscribed_capacity_in_gibibyte",
+          "queryColName": "SUM_VIRTUAL_VOLUME_CAPACITY"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "type": "simple",
+  "etlKey": "storage_serial_model_conf",
+  "definition": {
+    "loadTargetMeasurement": "storage_serial_model_conf",
+    "identificationType": "GLOBAL",
+    "extractTargets": [
+      {
+        "recordName": "PD",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "DKC_SERIAL_NUMBER",
+          "DKC_NAME"
+        ],
+        "indexes": [
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, DKC_SERIAL_NUMBER, DKC_NAME FROM PD;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "storage_serial_number",
+          "queryColName": "DKC_SERIAL_NUMBER"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "storage_model",
+          "queryColName": "DKC_NAME"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "type": "simple",
+  "etlKey": "storage_ldev",
+  "definition": {
+    "loadTargetMeasurement": "storage",
+    "extractTargets": [
+      {
+        "recordName": "PI_LDS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "READ_RESPONSE_RATE",
+          "WRITE_RESPONSE_RATE",
+          "READ_IO_COUNT",
+          "WRITE_IO_COUNT"
+        ],
+        "indexes": [
+          [
+            "DATETIME"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, MAX(READ_RESPONSE_RATE) as MAX_READ_RESPONSE_RATE, MAX(WRITE_RESPONSE_RATE) as MAX_WRITE_RESPONSE_RATE, CAST(AVG( CASE READ_IO_COUNT WHEN 0 THEN null ELSE READ_RESPONSE_RATE END) AS REAL) as ZERO_IGNORED_AVG_READ_RESPONSE_RATE, CAST(AVG( CASE WRITE_IO_COUNT WHEN 0 THEN null ELSE WRITE_RESPONSE_RATE END ) AS REAL) as ZERO_IGNORED_AVG_WRITE_RESPONSE_RATE FROM PI_LDS GROUP BY DATETIME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "avg_of_read_response_time_in_micro_sec",
+          "queryColName": "ZERO_IGNORED_AVG_READ_RESPONSE_RATE"
+        },
+        {
+          "fieldKey": "avg_of_write_response_time_in_micro_sec",
+          "queryColName": "ZERO_IGNORED_AVG_WRITE_RESPONSE_RATE"
+        }
+      ]
+    }
+  }
+}

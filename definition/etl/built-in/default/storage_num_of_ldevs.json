@@ -1,0 +1,36 @@
+{
+  "type": "simple",
+  "etlKey": "storage_num_of_ldevs",
+  "definition": {
+    "loadTargetMeasurement": "storage",
+    "extractTargets": [
+      {
+        "recordName": "PI_LDS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER"
+        ],
+        "indexes": [
+          [
+            "DATETIME"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, COUNT(LDEV_NUMBER) as NUM_OF_LDEVS FROM PI_LDS GROUP BY DATETIME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "num_of_ldevs",
+          "queryColName": "NUM_OF_LDEVS"
+        }
+      ]
+    }
+  }
+}
