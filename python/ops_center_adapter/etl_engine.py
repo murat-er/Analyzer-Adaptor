@@ -194,7 +194,8 @@ class EtlEngine:
                 # Parse CSV response
                 return self._parse_csv_response(response.text, fields)
             else:
-                logger.warning(f"Unknown content type: {content_type}")
+                # Handle empty
+                logger.debug("Empty response")
                 return []
                 
         except Exception as e:
