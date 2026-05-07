@@ -6,9 +6,10 @@ Manages instance_host and instance_names files.
 
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+import requests
 
 from .config import Config
 
@@ -30,31 +31,141 @@ class InstanceManager:
     """Manages agent instances for the adapter."""
     
     def __init__(self, config: Config):
-        """Initialize instance manager.
-        
-        Args:
-            config: Configuration object
-        """
+        """Initialize instance manager."""
         self._config = config
         self._instances: List[AgentInstance] = []
+        self._setup_directories()
         
-        self._load_instances()
+    def _setup_directories(self):
+        """Create required directories if they don't exist."""
+        instance_dir = Path(self._config.instance_dir)
+        instance_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Instance directory: {instance_dir}")
     
-    def _load_instances(self):
-        """Load instances from instance_host and instance_names files."""
+    def create_instances(self) -> List[AgentInstance]:
+        """Create instances by querying OPS Center."""
+        logger.info("Creating instances from OPS Center")
+        instances_data = self._query_ops_center()
+        
+        self._instances = []
+        for instance_data in instances_data:
+            instance = AgentInstance(
+                instance_id=instance_data.get('id', ''),
+                instance_name=instance_data.get('name', ''),
+                instance_host=instance_data.get('host', ''),
+                agent_url=instance_data.get('url', ''),
+                agent_type=instance_data.get('type', 'storage')
+            )
+            self._instances.append(instance)
+        
+        self._save_instance_files()
+        logger.info(f"Created {len(self._instances)} instances")
+        return self._instances
+    
+    def _query_ops_center(self) -> List[Dict[str, str]]:
+        """Query OPS Center for available instances."""
+        instances = []
+        
+        if not self._config.ops_center_url:
+            logger.warning("OPS Center URL not configured, using defaults")
+            return self._get_default_instances()
+        
+        try:
+            url = f"{self._config.ops_center_url}/api/v1/instances"
+            headers = {'Content-Type': 'application/json'}
+            
+            if self._config.ops_center_user:
+                import base64
+                credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
+                headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode()).decode()}"
+            
+            response = requests.get(url, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                data = response.json()
+                instances = data.get('instances', [])
+            else:
+                logger.warning(f"OPS Center returned {response.status_code}")
+                instances = self._get_default_instances()
+                
+        except Exception as e:
+            logger.error(f"Failed to query OPS Center: {e}")
+            instances = self._get_default_instances()
+        
+        return instances
+    
+    def _get_default_instances(self) -> List[Dict[str, str]]:
+        """Get default instances when OPS Center is not available."""
+        instances = []
+        
+        instance_names_config = self._config.get('instance_names', '')
+        
+        if instance_names_config:
+            for item in instance_names_config.split(','):
+                parts = item.split('=')
+                if len(parts) == 2:
+                    instances.append({
+                        'id': parts[0].strip(),
+                        'name': parts[1].strip(),
+                        'host': '',
+                        'url': '',
+                        'type': 'storage'
+                    })
+        
+        if not instances:
+            instances.append({
+                'id': 'default',
+                'name': 'default',
+                'host': 'localhost',
+                'url': self._config.ops_center_url or 'http://localhost:8080',
+                'type': 'storage'
+            })
+        
+        return instances
+    
+    def _save_instance_files(self):
+        """Save instances to instance_host and instance_names files."""
         instance_dir = Path(self._config.instance_dir)
         
-        if not instance_dir.exists():
-            logger.warning(f"Instance directory not found: {self._config.instance_dir}")
-            return
+        with open(instance_dir / 'instance_names', 'w') as f:
+            for instance in self._instances:
+                f.write(f"{instance.instance_id}={instance.instance_name}\n")
         
-        # Load instance_names
+        with open(instance_dir / 'instance_host', 'w') as f:
+            for instance in self._instances:
+                f.write(f"{instance.instance_id}={instance.instance_host}|{instance.agent_url}|{instance.agent_type}\n")
+        
+        logger.info(f"Saved instance files to {instance_dir}")
+    
+    def load_instances(self) -> List[Dict[str, Any]]:
+        """Load all instances as dictionaries."""
+        if not self._instances:
+            try:
+                self._instances = self.create_instances()
+            except Exception as e:
+                logger.error(f"Failed to create instances: {e}")
+        
+        if not self._instances:
+            self._load_from_files()
+        
+        return [
+            {
+                'instance_id': inst.instance_id,
+                'instance_name': inst.instance_name,
+                'instance_host': inst.instance_host,
+                'agent_url': inst.agent_url,
+                'agent_type': inst.agent_type
+            }
+            for inst in self._instances
+        ]
+    
+    def _load_from_files(self):
+        """Load instances from existing files."""
+        instance_dir = Path(self._config.instance_dir)
+        
         instance_names = self._load_instance_names(instance_dir / 'instance_names')
-        
-        # Load instance_host
         instance_hosts = self._load_instance_hosts(instance_dir / 'instance_host')
         
-        # Combine into instances
         for name in instance_names:
             instance_id = name['instance_id']
             instance_host = instance_hosts.get(instance_id, {})
@@ -68,20 +179,10 @@ class InstanceManager:
             ))
     
     def _load_instance_names(self, file_path: Path) -> List[Dict[str, str]]:
-        """Load instance names from file.
-        
-        File format: instance_id=instance_name
-        
-        Args:
-            file_path: Path to instance_names file
-            
-        Returns:
-            List of instance dictionaries
-        """
+        """Load instance names from file (format: instance_id=instance_name)."""
         instances = []
         
         if not file_path.exists():
-            logger.warning(f"instance_names file not found: {file_path}")
             return instances
         
         try:
@@ -101,20 +202,10 @@ class InstanceManager:
         return instances
     
     def _load_instance_hosts(self, file_path: Path) -> Dict[str, Dict[str, str]]:
-        """Load instance hosts from file.
-        
-        File format: instance_id=host|url|type
-        
-        Args:
-            file_path: Path to instance_host file
-            
-        Returns:
-            Dictionary of instance_id to host info
-        """
+        """Load instance hosts from file (format: instance_id=host|url|type)."""
         hosts = {}
         
         if not file_path.exists():
-            logger.warning(f"instance_host file not found: {file_path}")
             return hosts
         
         try:
@@ -137,49 +228,8 @@ class InstanceManager:
         
         return hosts
     
-    def load_instances(self) -> List[Dict[str, Any]]:
-        """Load all instances as dictionaries.
-        
-        Returns:
-            List of instance dictionaries
-        """
-        return [
-            {
-                'instance_id': inst.instance_id,
-                'instance_name': inst.instance_name,
-                'instance_host': inst.instance_host,
-                'agent_url': inst.agent_url,
-                'agent_type': inst.agent_type
-            }
-            for inst in self._instances
-        ]
-    
-    def save_instance(self, instance: AgentInstance):
-        """Save instance to files.
-        
-        Args:
-            instance: Instance to save
-        """
-        instance_dir = Path(self._config.instance_dir)
-        instance_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Save to instance_names
-        with open(instance_dir / 'instance_names', 'a') as f:
-            f.write(f"{instance.instance_id}={instance.instance_name}\n")
-        
-        # Save to instance_host
-        with open(instance_dir / 'instance_host', 'a') as f:
-            f.write(f"{instance.instance_id}={instance.instance_host}|{instance.agent_url}|{instance.agent_type}\n")
-    
     def get_instance(self, instance_id: str) -> Optional[AgentInstance]:
-        """Get instance by ID.
-        
-        Args:
-            instance_id: Instance ID
-            
-        Returns:
-            Instance or None if not found
-        """
+        """Get instance by ID."""
         for inst in self._instances:
             if inst.instance_id == instance_id:
                 return inst

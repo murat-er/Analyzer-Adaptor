@@ -49,6 +49,11 @@ def parse_args():
         help='Register database schema'
     )
     parser.add_argument(
+        '--create-instances',
+        action='store_true',
+        help='Create instance_host and instance_names files'
+    )
+    parser.add_argument(
         '--debug',
         action='store_true',
         help='Enable debug logging'
@@ -116,26 +121,38 @@ def register_database(config: Config):
     logger.info("Database registration completed")
 
 
+def create_instances(config: Config):
+    """Create instance files."""
+    logger = logging.getLogger(__name__)
+    logger.info("Creating instance files")
+    
+    instance_mgr = InstanceManager(config)
+    instances = instance_mgr.create_instances()
+    
+    logger.info(f"Created {len(instances)} instances in {config.instance_dir}")
+
+
 def main():
     """Main entry point."""
     args = parse_args()
     
-    # Setup logging
     setup_logging(debug=args.debug)
     logger = logging.getLogger(__name__)
     
-    # Load configuration
     config = Config(args.config)
     
     if args.register_db:
         register_database(config)
         return 0
     
-    if args.scheduled or args.register_db:
-        run_etl(config, scheduled=args.scheduled)
+    if args.create_instances:
+        create_instances(config)
         return 0
     
-    # Show help if no mode specified
+    if args.scheduled:
+        run_etl(config, scheduled=True)
+        return 0
+    
     args.parser.print_help()
     return 0
 
