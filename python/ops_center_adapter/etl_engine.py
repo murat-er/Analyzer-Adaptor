@@ -162,6 +162,9 @@ class EtlEngine:
         query_string = '&'.join(query_parts)
         full_url = f"{url}?{query_string}"
         
+        # Debug log
+        logger.debug(f"Request URL: {full_url}")
+        
         headers = {
             'Content-Type': 'application/json',
         }
