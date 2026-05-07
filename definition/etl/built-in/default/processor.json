@@ -1,0 +1,42 @@
+{
+  "type": "simple",
+  "etlKey": "processor_performance",
+  "definition": {
+    "loadTargetMeasurement": "storage_processor",
+    "extractTargets": [
+      {
+        "recordName": "PI_PRCS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "PROCESSOR_ID",
+          "ADAPTOR_ID",
+          "PROCESSOR_BUSY_RATE"
+        ],
+        "indexes": [
+          [
+            "PROCESSOR_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DATETIME, ADAPTOR_ID, PROCESSOR_BUSY_RATE FROM PI_PRCS WHERE PROCESSOR_ID = '_Total';",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "processor_name",
+          "queryColName": "ADAPTOR_ID"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "busy_rate_in_percent",
+          "queryColName": "PROCESSOR_BUSY_RATE"
+        }
+      ]
+    }
+  }
+}

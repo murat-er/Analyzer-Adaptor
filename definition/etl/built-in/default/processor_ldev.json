@@ -1,0 +1,103 @@
+{
+  "type": "simple",
+  "etlKey": "processor_ldev_performance",
+  "definition": {
+    "loadTargetMeasurement": "storage_processor",
+    "extractTargets": [
+      {
+        "recordName": "PI_LDE",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "RANDOM_READ_IO_RATE",
+          "RANDOM_WRITE_IO_RATE",
+          "SEQUENTIAL_READ_IO_RATE",
+          "SEQUENTIAL_WRITE_IO_RATE",
+          "RANDOM_READ_XFER_RATE",
+          "RANDOM_WRITE_XFER_RATE",
+          "SEQUENTIAL_READ_XFER_RATE",
+          "SEQUENTIAL_WRITE_XFER_RATE"
+        ],
+        "indexes": [
+          [
+            "DATETIME"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_LDC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "MP_BLADE"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER"
+          ],
+          [
+            "MP_BLADE"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PI_LDE.DATETIME as DATETIME, PD_LDC_LATEST.MP_BLADE as MP_BLADE, CAST(SUM(PI_LDE.RANDOM_READ_IO_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_RANDOM_READ_IO_RATE, CAST(SUM(PI_LDE.RANDOM_WRITE_IO_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_RANDOM_WRITE_IO_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_READ_IO_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_SEQUENTIAL_READ_IO_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_WRITE_IO_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_SEQUENTIAL_WRITE_IO_RATE, SUM(PI_LDE.RANDOM_READ_IO_RATE) + SUM(PI_LDE.RANDOM_WRITE_IO_RATE) + SUM(PI_LDE.SEQUENTIAL_READ_IO_RATE) + SUM(PI_LDE.SEQUENTIAL_WRITE_IO_RATE) AS SUM_OF_LDEV_TOTAL_IO_RATE, CAST(SUM(PI_LDE.RANDOM_READ_XFER_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_RANDOM_READ_XFER_RATE, CAST(SUM(PI_LDE.RANDOM_WRITE_XFER_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_RANDOM_WRITE_XFER_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_READ_XFER_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_SEQUENTIAL_READ_XFER_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_WRITE_XFER_RATE) AS DOUBLE PRECISION) AS SUM_OF_LDEV_SEQUENTIAL_WRITE_XFER_RATE, SUM(PI_LDE.RANDOM_READ_XFER_RATE) + SUM(PI_LDE.RANDOM_WRITE_XFER_RATE) + SUM(PI_LDE.SEQUENTIAL_READ_XFER_RATE) + SUM(PI_LDE.SEQUENTIAL_WRITE_XFER_RATE) AS SUM_OF_LDEV_TOTAL_XFER_RATE FROM PI_LDE JOIN PD_LDC_LATEST ON PI_LDE.LDEV_NUMBER = PD_LDC_LATEST.LDEV_NUMBER GROUP BY PD_LDC_LATEST.MP_BLADE, PI_LDE.DATETIME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "processor_name",
+          "queryColName": "MP_BLADE"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_random_read_io_per_sec",
+          "queryColName": "SUM_OF_LDEV_RANDOM_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_write_io_per_sec",
+          "queryColName": "SUM_OF_LDEV_RANDOM_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_read_io_per_sec",
+          "queryColName": "SUM_OF_LDEV_SEQUENTIAL_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_write_io_per_sec",
+          "queryColName": "SUM_OF_LDEV_SEQUENTIAL_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_io_per_sec",
+          "queryColName": "SUM_OF_LDEV_TOTAL_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_read_transfer_mebibytes_per_sec",
+          "queryColName": "SUM_OF_LDEV_RANDOM_READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_write_transfer_mebibytes_per_sec",
+          "queryColName": "SUM_OF_LDEV_RANDOM_WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_read_transfer_mebibytes_per_sec",
+          "queryColName": "SUM_OF_LDEV_SEQUENTIAL_READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_write_transfer_mebibytes_per_sec",
+          "queryColName": "SUM_OF_LDEV_SEQUENTIAL_WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_transfer_mebibytes_per_sec",
+          "queryColName": "SUM_OF_LDEV_TOTAL_XFER_RATE"
+        }
+      ]
+    }
+  }
+}

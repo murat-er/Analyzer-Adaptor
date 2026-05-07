@@ -1,0 +1,43 @@
+{
+  "type": "simple",
+  "etlKey": "storage_pool",
+  "definition": {
+    "loadTargetMeasurement": "storage",
+    "extractTargets": [
+      {
+        "recordName": "PD",
+        "extractType": [
+          "history"
+        ],
+        "fields": [],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_SEFF",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "TOTAL_EFFICIENCY_RATIO"
+        ],
+        "indexes": [
+          [
+            "DATETIME"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "WITH PD_SEFF_ENABLE AS( SELECT COUNT(*) AS COUNT FROM PD_SEFF) SELECT PD_SEFF.DATETIME, PD_SEFF.TOTAL_EFFICIENCY_RATIO AS TOTAL_EFFICIENCY_RATIO FROM PD_SEFF UNION ALL SELECT PD.DATETIME, CAST(-1 AS REAL) AS TOTAL_EFFICIENCY_RATIO FROM PD CROSS JOIN PD_SEFF_ENABLE WHERE PD_SEFF_ENABLE.COUNT = 0;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "total_efficiency_ratio",
+          "queryColName": "TOTAL_EFFICIENCY_RATIO"
+        }
+      ]
+    }
+  }
+}
