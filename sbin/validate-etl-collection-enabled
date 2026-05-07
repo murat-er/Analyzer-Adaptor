@@ -1,8 +1,0 @@
-#!/bin/bash -eu
-
-function validate_etl_collection_enabled() {
-  if [ "$1" != "true" ] && [ "$1" != "false" ]; then
-    echo "$(printf "${ETL_COLLECTION_ENABLED_INVALID_VALUE_ERR_MSG}" "$2")"
-    exit 1
-  fi
-}
