@@ -65,13 +65,27 @@ class InstanceManager:
         return self._instances
     
     def _query_ops_center(self) -> List[Dict[str, str]]:
-        """Query OPS Center for available instances."""
+        """Query OPS Center for available instances using native tools.
+        
+        Uses:
+        - jpcinslist agtd: Get instance list
+        - jpcconf host hostmode -display: Get host information
+        """
         instances = []
         
         if not self._config.ops_center_url:
             logger.warning("OPS Center URL not configured, using defaults")
             return self._get_default_instances()
         
+        # Try using native OPS Center tools first (like Java version does)
+        try:
+            instances = self._query_with_jpc_tools()
+            if instances:
+                return instances
+        except Exception as e:
+            logger.debug(f"jpc tools failed: {e}")
+        
+        # Fallback to API
         try:
             url = f"{self._config.ops_center_url}/api/v1/instances"
             headers = {'Content-Type': 'application/json'}
@@ -95,6 +109,94 @@ class InstanceManager:
             instances = self._get_default_instances()
         
         return instances
+    
+    def _query_with_jpc_tools(self) -> List[Dict[str, str]]:
+        """Query using Hitachi jpc tools (jpcinslist, jpcconf).
+        
+        Returns:
+            List of instance dictionaries
+        """
+        instances = []
+        
+        try:
+            import subprocess
+            
+            # Get instance list: jpcinslist agtd
+            result = subprocess.run(
+                ['/opt/jp1pc/tools/jpcinslist', 'agtd'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode != 0:
+                raise Exception(f"jpcinslist failed: {result.stderr}")
+            
+            # Parse instance names (format: instance_id=instance_name)
+            for line in result.stdout.strip().split('\n'):
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' in line:
+                    parts = line.split('=', 1)
+                    instance_id = parts[0].strip()
+                    instance_name = parts[1].strip() if len(parts) > 1 else instance_id
+                    
+                    # Get host info for this instance
+                    host = self._get_instance_host()
+                    
+                    instances.append({
+                        'id': instance_id,
+                        'name': instance_name,
+                        'host': host,
+                        'url': f"https://{host}",
+                        'type': 'storage'
+                    })
+            
+            logger.info(f"Found {len(instances)} instances from jpcinslist")
+            
+        except FileNotFoundError:
+            logger.debug("jpcinslist not found, trying API")
+            raise
+        except Exception as e:
+            logger.debug(f"jpc tools error: {e}")
+            raise
+        
+        return instances
+    
+    def _get_instance_host(self) -> str:
+        """Get host information using jpcconf.
+        
+        Returns:
+            Hostname
+        """
+        try:
+            import subprocess
+            
+            # Get hostname: jpcconf host hostmode -display
+            result = subprocess.run(
+                ['/opt/jp1pc/tools/jpcconf', 'host', 'hostmode', '-display'],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+            
+            if result.returncode == 0:
+                # Parse hostname from output
+                # Format: hostname: <value> or aliasname: <value>
+                for line in result.stdout.strip().split('\n'):
+                    line = line.strip().lower()
+                    if line.startswith('hostname:') or line.startswith('aliasname:'):
+                        return line.split(':', 1)[1].strip()
+            
+            # Fallback to socket hostname
+            import socket
+            return socket.gethostname()
+            
+        except Exception as e:
+            logger.debug(f"jpcconf failed: {e}")
+            import socket
+            return socket.gethostname()
     
     def _get_default_instances(self) -> List[Dict[str, str]]:
         """Get default instances when OPS Center is not available."""
