@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""
+InfluxDB client for OPS Center Analyzer Adapter.
+Handles writing data to InfluxDB.
+"""
+
+import logging
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from influxdb_client import InfluxDBClient, Point, WriteOptions
+from influxdb_client.client.write_api import WriteApiSynchronous
+
+from .config import Config
+
+
+logger = logging.getLogger(__name__)
+
+
+class InfluxDBWriteResult:
+    """Result of InfluxDB write operation."""
+    def __init__(self):
+        self._success: bool = True
+        self._points_written: int = 0
+        self._error: Optional[str] = None
+    
+    @property
+    def success(self) -> bool:
+        """Whether write was successful."""
+        return self._success
+    
+    @property
+    def points_written(self) -> int:
+        """Number of points written."""
+        return self._points_written
+    
+    @property
+    def error(self) -> Optional[str]:
+        """Error message if failed."""
+        return self._error
+    
+    def mark_failed(self, error: str):
+        """Mark operation as failed."""
+        self._success = False
+        self._error = error
+    
+    def set_points_written(self, count: int):
+        """Set number of points written."""
+        self._points_written = count
+
+
+class InfluxClient:
+    """InfluxDB client for writing metrics."""
+    
+    def __init__(self, config: Config):
+        """Initialize InfluxDB client.
+        
+        Args:
+            config: Configuration object
+        """
+        self._config = config
+        self._client: Optional[InfluxDBClient] = None
+        self._write_api = None
+        
+        self._connect()
+    
+    def _connect(self):
+        """Connect to InfluxDB."""
+        try:
+            self._client = InfluxDBClient(
+                url=self._config.influxdb_url,
+                token=self._config.influxdb_token,
+                org=self._config.influxdb_org
+            )
+            
+            self._write_api = self._client.write_api(
+                write_options=WriteOptions(
+                    batch_size=1000,
+                    flush_interval=5000,
+                    jitter_interval=1000
+                )
+            )
+            
+            logger.info(f"Connected to InfluxDB at {self._config.influxdb_url}")
+            
+        except Exception as e:
+            logger.error(f"Failed to connect to InfluxDB: {e}")
+            raise
+    
+    def create_bucket(self):
+        """Create bucket if it doesn't exist."""
+        try:
+            buckets_api = self._client.buckets_api()
+            
+            # Check if bucket exists
+            bucket = buckets_api.find_bucket_by_name(self._config.influxdb_bucket)
+            
+            if bucket is None:
+                # Create bucket
+                org = self._client.organizations_api().find_organizations(
+                    org=self._config.influxdb_org
+                )[0]
+                
+                buckets_api.create_bucket(
+                    bucket_name=self._config.influxdb_bucket,
+                    org_id=org.id,
+                    retention_rules=None
+                )
+                
+                logger.info(f"Created bucket: {self._config.influxdb_bucket}")
+            
+        except Exception as e:
+            logger.error(f"Failed to create bucket: {e}")
+            raise
+    
+    def write(self, data: List[Dict[str, Any]]) -> InfluxDBWriteResult:
+        """Write data points to InfluxDB.
+        
+        Args:
+            data: List of data points to write
+            
+        Returns:
+            Write result
+        """
+        result = InfluxDBWriteResult()
+        
+        if not data:
+            result.set_points_written(0)
+            return result
+        
+        try:
+            # Build points
+            points = []
+            for record in data:
+                point = self._build_point(record)
+                if point:
+                    points.append(point)
+            
+            # Write points
+            if points:
+                self._write_api.write(
+                    bucket=self._config.influxdb_bucket,
+                    org=self._config.influxdb_org,
+                    record=points
+                )
+                result.set_points_written(len(points))
+                logger.info(f"Wrote {len(points)} points to InfluxDB")
+            
+        except Exception as e:
+            logger.error(f"Failed to write to InfluxDB: {e}")
+            result.mark_failed(str(e))
+        
+        return result
+    
+    def _build_point(self, record: Dict[str, Any]) -> Optional[Point]:
+        """Build InfluxDB point from record.
+        
+        Args:
+            record: Data record
+            
+        Returns:
+            InfluxDB Point or None
+        """
+        try:
+            measurement = record.get('_measurement', 'storage')
+            timestamp = record.get('_time', datetime.utcnow())
+            
+            # Create point
+            point = Point(measurement).time(timestamp)
+            
+            # Add tags
+            for key, value in record.get('tags', {}).items():
+                if value is not None:
+                    point.tag(key, str(value))
+            
+            # Add fields
+            for key, value in record.get('fields', {}).items():
+                if value is not None:
+                    if isinstance(value, (int, float)):
+                        point.field(key, value)
+                    elif isinstance(value, bool):
+                        point.field(key, value)
+                    else:
+                        point.field(key, str(value))
+            
+            return point
+            
+        except Exception as e:
+            logger.error(f"Failed to build point: {e}")
+            return None
+    
+    def query(self, query: str) -> List[Dict[str, Any]]:
+        """Query data from InfluxDB.
+        
+        Args:
+            query: InfluxQL query
+            
+        Returns:
+            Query results
+        """
+        try:
+            query_api = self._client.query_api()
+            result = query_api.query_data_frame(query)
+            
+            if result.empty:
+                return []
+            
+            return result.to_dict(orient='records')
+            
+        except Exception as e:
+            logger.error(f"Query failed: {e}")
+            return []
+    
+    def close(self):
+        """Close the InfluxDB connection."""
+        if self._client:
+            self._client.close()
+            logger.info("Closed InfluxDB connection")
