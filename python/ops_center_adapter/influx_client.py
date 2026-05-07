@@ -8,8 +8,20 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from influxdb_client import InfluxDBClient, Point, WriteOptions
-from influxdb_client.client.write_api import WriteApiSynchronous
+# Try influxdb-client v3 first, fallback to influxdb v2
+try:
+    from influxdb_client import InfluxDBClient, Point
+    INFLUXDB_V3 = True
+except ImportError:
+    try:
+        from influxdb import InfluxDBClient
+        from influxdb.models import Point
+        INFLUXDB_V3 = False
+    except ImportError:
+        # No library installed
+        InfluxDBClient = None
+        Point = None
+        INFLUXDB_V3 = False
 
 from .config import Config
 
@@ -73,13 +85,8 @@ class InfluxClient:
                 org=self._config.influxdb_org
             )
             
-            self._write_api = self._client.write_api(
-                write_options=WriteOptions(
-                    batch_size=1000,
-                    flush_interval=5000,
-                    jitter_interval=1000
-                )
-            )
+            # Use simple write_api without options for v2
+            self._write_api = self._client.write_api()
             
             logger.info(f"Connected to InfluxDB at {self._config.influxdb_url}")
             
