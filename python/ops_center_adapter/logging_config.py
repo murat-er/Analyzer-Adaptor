@@ -35,7 +35,8 @@ def get_log_file_path() -> Path:
     Returns:
         Path to log file
     """
-    log_dir = Path('/var/opt/hitachi/analyzer_adapter/log')
+    log_dir = Path('./ops_center_adapter/log')
+    log_dir.mkdir(parents=True, exist_ok=True)
     return log_dir / 'adapter.log'
 
 

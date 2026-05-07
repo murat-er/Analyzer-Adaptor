@@ -21,19 +21,15 @@ class RaidAgentReporter:
     """Reporter for raid_agent result file."""
     
     def __init__(self, config: Config):
-        """Initialize raid agent reporter.
-        
-        Args:
-            config: Configuration object
-        """
+        """Initialize raid agent reporter."""
         self._config = config
         self._results: List[Dict[str, Any]] = []
         self._start_time = datetime.utcnow()
         
-        self._result_dir = Path(config.result_dir)
-        self._result_dir.mkdir(parents=True, exist_ok=True)
+        result_dir = Path('./ops_center_adapter/result')
+        result_dir.mkdir(parents=True, exist_ok=True)
         
-        self._result_file = self._result_dir / 'raid_agent'
+        self._result_file = result_dir / 'raid_agent'
     
     def add_result(
         self,

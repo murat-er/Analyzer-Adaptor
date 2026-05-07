@@ -1,37 +1,35 @@
-# OPS Center Analyzer Adapter - Python Documentation
+# OPS Center Analyzer Adapter - Python Implementation
 
-## Overview
-
-This is a pure Python implementation of the OPS Center Analyzer Adapter, which replaces the Java-based `analyzer-adapter.jar`. The tool collects performance data from Hitachi OPS Center Analyzer using definition JSON files and sends them to InfluxDB.
-
-## File Structure
+## Directory Structure
 
 ```
 python/
 ├── ops_center_adapter/
-│   ├── __main__.py          # Main entry point
-│   ├── __init__.py         # Package initialization
-│   ├── config.py            # Configuration loader
-│   ├── definition_reader.py # Definition JSON parser
-│   ├── etl_engine.py       # ETL (Extract-Transform-Load) engine
-│   ├── instance_manager.py # Instance file management
-│   ├── influx_client.py    # InfluxDB client
-│   ├── logging_config.py  # Logging configuration
-│   └── raid_agent_reporter.py # Result file generator
-├── requirements.txt        # Python dependencies
-├── setup.py              # Package setup
-└── run.sh              # Launcher script
+│   ├── __main__.py              # Main entry point
+│   ├── __init__.py              # Package initialization
+│   ├── config.py                 # Configuration
+│   ├── definition_reader.py    # Definition JSON parser
+│   ├── etl_engine.py           # ETL engine
+│   ├── instance_manager.py     # Instance management
+│   ├── influx_client.py        # InfluxDB client
+│   ├── logging_config.py      # Logging
+│   ├── raid_agent_reporter.py  # Result reporter
+│   ├── etc/
+│   │   └── adapter.properties # Configuration file
+│   ├── definition/
+│   │   └── etl/built-in/default/ # Definition files
+│   ├── agent_instance/
+│   │   ├── instance_host
+│   │   └── instance_names
+│   ├── result/
+│   │   └── raid_agent
+│   └── log/
+│       └── adapter.log
+├── run.sh
+└── requirements.txt
 ```
 
-## Installation
-
-```bash
-cd python
-pip install -r requirements.txt
-pip install -e .
-```
-
-## Configuration
+## Usage
 
 ### Environment Variables
 

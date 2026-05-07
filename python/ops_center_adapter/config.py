@@ -18,12 +18,13 @@ logger = logging.getLogger(__name__)
 class Config:
     """Configuration manager for the adapter."""
     
-    # Default paths
-    DEFAULT_BASE_DIR = '/var/opt/hitachi/analyzer_adapter'
-    DEFAULT_CONFIG_PATH = '/etc/opt/hitachi/analyzer_adapter/adapter.properties'
-    DEFAULT_DEFINITION_DIR = '/var/opt/hitachi/analyzer_adapter/definition/etl/built-in/default'
-    DEFAULT_INSTANCE_DIR = '/var/opt/hitachi/analyzer_adapter/agent_instance'
-    DEFAULT_RESULT_DIR = '/var/opt/hitachi/analyzer_adapter/result'
+    # Default paths - all under ops_center_adapter folder
+    DEFAULT_BASE_DIR = './ops_center_adapter'
+    DEFAULT_CONFIG_DIR = './ops_center_adapter/etc'
+    DEFAULT_DEFINITION_DIR = './ops_center_adapter/definition/etl/built-in/default'
+    DEFAULT_INSTANCE_DIR = './ops_center_adapter/agent_instance'
+    DEFAULT_RESULT_DIR = './ops_center_adapter/result'
+    DEFAULT_LOG_DIR = './ops_center_adapter/log'
     
     # Default values
     DEFAULT_COLLECTION_INTERVAL = 5  # minutes
@@ -40,7 +41,15 @@ class Config:
         self._config: Dict[str, Any] = {}
         self._config_path = config_path
         
+        self._setup_directories()
         self._load_config()
+    
+    def _setup_directories(self):
+        """Create required directories."""
+        os.makedirs('./ops_center_adapter/etc', exist_ok=True)
+        os.makedirs('./ops_center_adapter/agent_instance', exist_ok=True)
+        os.makedirs('./ops_center_adapter/result', exist_ok=True)
+        os.makedirs('./ops_center_adapter/log', exist_ok=True)
     
     def _load_config(self):
         """Load configuration from file and environment."""
@@ -154,6 +163,11 @@ class Config:
         return self._config.get('base_dir', self.DEFAULT_BASE_DIR)
     
     @property
+    def config_dir(self) -> str:
+        """Directory containing config files."""
+        return self._config.get('config_dir', self.DEFAULT_CONFIG_DIR)
+    
+    @property
     def definition_dir(self) -> str:
         """Directory containing definition JSON files."""
         return self._config.get('definition_dir', self.DEFAULT_DEFINITION_DIR)
@@ -167,6 +181,11 @@ class Config:
     def result_dir(self) -> str:
         """Directory for result files."""
         return self._config.get('result_dir', self.DEFAULT_RESULT_DIR)
+    
+    @property
+    def log_dir(self) -> str:
+        """Directory for log files."""
+        return self._config.get('log_dir', self.DEFAULT_LOG_DIR)
     
     @property
     def collection_interval(self) -> int:

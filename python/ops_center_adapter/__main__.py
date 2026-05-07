@@ -35,7 +35,7 @@ def parse_args():
     )
     parser.add_argument(
         '--config', '-c',
-        default='/var/opt/hitachi/analyzer_adapter/etc/adapter.properties',
+        default='./ops_center_adapter/etc/adapter.properties',
         help='Path to configuration file'
     )
     parser.add_argument(

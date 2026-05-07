@@ -1,0 +1,117 @@
+{
+  "type": "simple",
+  "etlKey": "consistency_group_ctdelta",
+  "definition": {
+    "loadTargetMeasurement": "storage_consistency_group",
+    "extractTargets": [
+      {
+        "recordName": "PD",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DKC_SERIAL_NUMBER"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_LDCC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "P_VOL_DKC_SERIAL_NUMBER",
+          "S_VOL_DKC_SERIAL_NUMBER",
+          "CTG_ID",
+          "MU_NUMBER",
+          "M_JOURNAL_ID",
+          "R_JOURNAL_ID",
+          "P_VOL_DKC_MODEL",
+          "S_VOL_DKC_MODEL",
+          "PATH_GROUP_ID",
+          "COPY_STATUS"
+        ],
+        "indexes": [
+          [
+            "CTG_ID"
+          ],
+          [
+            "P_VOL_DKC_SERIAL_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PI_CTGS",
+        "fields": [
+          "DATETIME",
+          "CTG_ID",
+          "CT_DELTA"
+        ],
+        "extractType": [
+          "history"
+        ],
+        "indexes": [
+          [
+            "CTG_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT DISTINCT PI_CTGS.DATETIME, CONCAT( PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, '_', PD_LDCC_LATEST.CTG_ID) AS UNIQUE_KEY, PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.S_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.CTG_ID, PD_LDCC_LATEST.MU_NUMBER, PD_LDCC_LATEST.M_JOURNAL_ID, PD_LDCC_LATEST.R_JOURNAL_ID, PD_LDCC_LATEST.P_VOL_DKC_MODEL, PD_LDCC_LATEST.S_VOL_DKC_MODEL, PD_LDCC_LATEST.PATH_GROUP_ID, GROUP_CONCAT( DISTINCT PD_LDCC_LATEST.COPY_STATUS ORDER BY PD_LDCC_LATEST.COPY_STATUS ) AS COPY_STATUS, PI_CTGS.CT_DELTA FROM PD_LATEST JOIN PD_LDCC_LATEST ON PD_LATEST.DKC_SERIAL_NUMBER = PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER JOIN PI_CTGS ON PD_LDCC_LATEST.CTG_ID = PI_CTGS.CTG_ID WHERE PD_LDCC_LATEST.CTG_ID IS NOT NULL AND PI_CTGS.CT_DELTA >= 0 GROUP BY PI_CTGS.DATETIME, PD_LDCC_LATEST.CTG_ID, PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.S_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.MU_NUMBER, PD_LDCC_LATEST.M_JOURNAL_ID, PD_LDCC_LATEST.R_JOURNAL_ID, PD_LDCC_LATEST.P_VOL_DKC_MODEL, PD_LDCC_LATEST.S_VOL_DKC_MODEL, PD_LDCC_LATEST.PATH_GROUP_ID;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "unique_key",
+          "queryColName": "UNIQUE_KEY"
+        },
+        {
+          "tagKey": "pvol_storage_serial_number",
+          "queryColName": "P_VOL_DKC_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "svol_storage_serial_number",
+          "queryColName": "S_VOL_DKC_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "consistency_group_id",
+          "queryColName": "CTG_ID"
+        },
+        {
+          "tagKey": "mirror_unit_number",
+          "queryColName": "MU_NUMBER"
+        },
+        {
+          "tagKey": "master_journal_id",
+          "queryColName": "M_JOURNAL_ID"
+        },
+        {
+          "tagKey": "restore_journal_id",
+          "queryColName": "R_JOURNAL_ID"
+        },
+        {
+          "tagKey": "pvol_storage_model",
+          "queryColName": "P_VOL_DKC_MODEL"
+        },
+        {
+          "tagKey": "svol_storage_model",
+          "queryColName": "S_VOL_DKC_MODEL"
+        },
+        {
+          "tagKey": "path_group_id",
+          "queryColName": "PATH_GROUP_ID"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "copy_status",
+          "queryColName": "COPY_STATUS"
+        },
+        {
+          "fieldKey": "ct_delta_in_sec",
+          "queryColName": "CT_DELTA"
+        }
+      ]
+    }
+  }
+}
