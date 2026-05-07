@@ -126,17 +126,30 @@ class EtlEngine:
             # Use OPS Center URL from config
             agent_url = self._config.ops_center_url
         
-        # Build request
-        url = f"{agent_url}/api/v1/metrics"
+        # Build request - use TuningAgent endpoint (like Java version)
+        # URL: http://host:24221/TuningAgent/v1/objects/{record}?agentType=RAID&pfmHostName={host}&agentInstanceName={id}&...
+        base_url = agent_url.rstrip('/')
+        if '/api/' in base_url:
+            base_url = base_url.replace('/api/', '/TuningAgent/v1/')
+        else:
+            base_url = f"{base_url}/TuningAgent/v1"
+        
+        url = f"{base_url}/objects/{record_name}"
+        
+        # Fields separator is %1F (unit separator), not comma
+        fields_separator = '%1F'
         
         params = {
-            'instance': instance.get('instance_name'),
-            'record': record_name,
-            'type': extract_type[0] if extract_type else 'history',
-            'fields': ','.join(fields),
-            'start_time': time_range[0].isoformat(),
-            'end_time': time_range[1].isoformat(),
+            'agentType': 'RAID',
+            'pfmHostName': instance_host,
+            'agentInstanceName': instance.get('instance_name', instance.get('id', '')),
+            'fields': fields_separator.join(fields),
         }
+        
+        # Add time range for historical data
+        if extract_type and extract_type[0] == 'history':
+            params['startTime'] = time_range[0].strftime('%Y-%m-%dT%H:%MZ')
+            params['endTime'] = time_range[1].strftime('%Y-%m-%dT%H:%MZ')
         
         headers = {
             'Content-Type': 'application/json',
@@ -144,7 +157,9 @@ class EtlEngine:
         
         # Add authentication if configured
         if self._config.ops_center_user:
-            headers['Authorization'] = f"Basic {self._get_auth()}"
+            import base64
+            credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
+            headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode()).decode()}"
         
         try:
             response = self._session.get(
@@ -157,7 +172,7 @@ class EtlEngine:
             if response.status_code == 200:
                 return response.json().get('data', [])
             else:
-                logger.warning(f"API returned {response.status_code}")
+                logger.warning(f"API returned {response.status_code}: {response.text[:200]}")
                 return []
                 
         except Exception as e:
