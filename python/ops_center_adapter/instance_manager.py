@@ -183,10 +183,10 @@ class InstanceManager:
             
             if result.returncode == 0:
                 # Parse hostname from output
-                # Format: hostname: <value> or aliasname: <value>
+                # Format: "hostname  : HDS-EF-GBZ-PROBE"
                 for line in result.stdout.strip().split('\n'):
                     line = line.strip().lower()
-                    if line.startswith('hostname:') or line.startswith('aliasname:'):
+                    if 'hostname' in line and ':' in line:
                         return line.split(':', 1)[1].strip()
             
             # Fallback to socket hostname
