@@ -181,19 +181,73 @@ class EtlEngine:
                 timeout=30
             )
             
-            if response.status_code == 200:
-                try:
-                    return response.json().get('data', [])
-                except Exception:
-                    logger.warning(f"Empty response: {response.text[:100]}")
-                    return []
+            content_type = response.headers.get('Content-Type', '')
+            
+            if 'application/json' in content_type:
+                if response.status_code == 200:
+                    try:
+                        return response.json().get('data', [])
+                    except Exception:
+                        logger.warning(f"Empty response")
+                        return []
+            elif 'text/csv' in content_type or 'text/plain' in content_type:
+                # Parse CSV response
+                return self._parse_csv_response(response.text, fields)
             else:
-                logger.warning(f"API returned {response.status_code}: {response.text[:200]}")
+                logger.warning(f"Unknown content type: {content_type}")
                 return []
                 
         except Exception as e:
             logger.error(f"API call failed: {e}")
             return []
+    
+    def _parse_csv_response(self, csv_text: str, fields: List[str]) -> List[Dict[str, Any]]:
+        """Parse CSV response from OPS Center API.
+        
+        Args:
+            csv_text: CSV response text
+            fields: Field names
+            
+        Returns:
+            List of parsed records
+        """
+        records = []
+        
+        if not csv_text or csv_text.strip() == '':
+            return records
+        
+        lines = csv_text.strip().split('\n')
+        
+        if len(lines) < 2:
+            return records
+        
+        # Skip header and type rows
+        data_lines = lines[1:] if len(lines) > 1 else []
+        
+        for line in data_lines:
+            if not line.strip():
+                continue
+            
+            values = line.split(',')
+            if len(values) >= len(fields):
+                record = {}
+                for i, field in enumerate(fields):
+                    if i < len(values):
+                        val = values[i].strip()
+                        # Try to convert to number
+                        if val.startswith('"') and val.endswith('"'):
+                            val = val[1:-1]
+                        try:
+                            if '.' in val:
+                                record[field] = float(val)
+                            else:
+                                record[field] = int(val)
+                        except ValueError:
+                            record[field] = val
+                if record:
+                    records.append(record)
+        
+        return records
     
     def _get_time_range(self) -> tuple:
         """Get time range for extraction.
