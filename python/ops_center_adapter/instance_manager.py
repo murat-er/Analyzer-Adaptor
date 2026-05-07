@@ -228,17 +228,24 @@ class InstanceManager:
         return instances
     
     def _save_instance_files(self):
-        """Save instances to instance_host and instance_names files."""
+        """Save instances to instance_host and instance_names files.
+        
+        Format (same as original Java):
+        - instance_names: instance ID per line (41003, 62026, etc.)
+        - instance_host: hostname only
+        """
         base_dir = Path(__file__).parent.parent
         instance_dir = base_dir / 'agent_instance'
         
+        # Instance names: one per line (no = sign)
         with open(instance_dir / 'instance_names', 'w') as f:
             for instance in self._instances:
-                f.write(f"{instance.instance_id}={instance.instance_name}\n")
+                f.write(f"{instance.instance_id}\n")
         
+        # Instance host: single hostname
+        hostname = self._instances[0].instance_host if self._instances else 'localhost'
         with open(instance_dir / 'instance_host', 'w') as f:
-            for instance in self._instances:
-                f.write(f"{instance.instance_id}={instance.instance_host}|{instance.agent_url}|{instance.agent_type}\n")
+            f.write(f"{hostname}\n")
         
         logger.info(f"Saved instance files to {instance_dir}")
     
@@ -270,22 +277,27 @@ class InstanceManager:
         instance_dir = base_dir / 'agent_instance'
         
         instance_names = self._load_instance_names(instance_dir / 'instance_names')
-        instance_hosts = self._load_instance_hosts(instance_dir / 'instance_host')
+        instance_host = self._load_instance_hosts(instance_dir / 'instance_host')
+        
+        # Apply to all instances
+        host_info = list(instance_host.values())[0] if instance_host else {'host': 'localhost', 'url': '', 'type': 'storage'}
         
         for name in instance_names:
             instance_id = name['instance_id']
-            instance_host = instance_hosts.get(instance_id, {})
             
             self._instances.append(AgentInstance(
                 instance_id=instance_id,
                 instance_name=name['instance_name'],
-                instance_host=instance_host.get('host', ''),
-                agent_url=instance_host.get('url', ''),
-                agent_type=instance_host.get('type', 'storage')
+                instance_host=host_info.get('host', ''),
+                agent_url=host_info.get('url', ''),
+                agent_type=host_info.get('type', 'storage')
             ))
     
     def _load_instance_names(self, file_path: Path) -> List[Dict[str, str]]:
-        """Load instance names from file (format: instance_id=instance_name)."""
+        """Load instance names from file.
+        
+        File format: one instance ID per line
+        """
         instances = []
         
         if not file_path.exists():
@@ -295,20 +307,21 @@ class InstanceManager:
             with open(file_path, 'r') as f:
                 for line in f:
                     line = line.strip()
-                    if line and not line.startswith('#'):
-                        parts = line.split('=', 1)
-                        if len(parts) == 2:
-                            instances.append({
-                                'instance_id': parts[0].strip(),
-                                'instance_name': parts[1].strip()
-                            })
+                    if line:
+                        instances.append({
+                            'instance_id': line,
+                            'instance_name': line
+                        })
         except Exception as e:
             logger.error(f"Failed to load instance_names: {e}")
         
         return instances
     
     def _load_instance_hosts(self, file_path: Path) -> Dict[str, Dict[str, str]]:
-        """Load instance hosts from file (format: instance_id=host|url|type)."""
+        """Load instance host from file.
+        
+        File format: single hostname
+        """
         hosts = {}
         
         if not file_path.exists():
@@ -316,19 +329,14 @@ class InstanceManager:
         
         try:
             with open(file_path, 'r') as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith('#'):
-                        parts = line.split('=', 1)
-                        if len(parts) == 2:
-                            instance_id = parts[0].strip()
-                            values = parts[1].split('|')
-                            
-                            hosts[instance_id] = {
-                                'host': values[0] if len(values) > 0 else '',
-                                'url': values[1] if len(values) > 1 else '',
-                                'type': values[2] if len(values) > 2 else 'storage'
-                            }
+                hostname = f.read().strip()
+                if hostname:
+                    # Apply same hostname to all instances
+                    hosts[hostname] = {
+                        'host': hostname,
+                        'url': f"https://{hostname}",
+                        'type': 'storage'
+                    }
         except Exception as e:
             logger.error(f"Failed to load instance_host: {e}")
         
