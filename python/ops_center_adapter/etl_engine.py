@@ -218,11 +218,11 @@ class EtlEngine:
         
         lines = csv_text.strip().split('\n')
         
-        if len(lines) < 2:
+        if len(lines) < 3:
             return records
         
-        # Skip header and type rows
-        data_lines = lines[1:] if len(lines) > 1 else []
+        # Skip header (line 1) and type (line 2), start from data (line 3)
+        data_lines = lines[2:]
         
         for line in data_lines:
             if not line.strip():
@@ -234,9 +234,10 @@ class EtlEngine:
                 for i, field in enumerate(fields):
                     if i < len(values):
                         val = values[i].strip()
-                        # Try to convert to number
+                        # Remove quotes
                         if val.startswith('"') and val.endswith('"'):
                             val = val[1:-1]
+                        # Try to convert
                         try:
                             if '.' in val:
                                 record[field] = float(val)
@@ -256,8 +257,14 @@ class EtlEngine:
             (start_time, end_time) tuple
         """
         end_time = datetime.utcnow()
+        
+        # Use offset from config (minutes to go back)
+        offset = getattr(self._config, 'collection_offset', 0)
+        if offset is None:
+            offset = 0
+            
         start_time = end_time - timedelta(
-            minutes=self._config.collection_interval
+            minutes=self._config.collection_interval + offset
         )
         
         return (start_time, end_time)
