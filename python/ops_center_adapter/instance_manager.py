@@ -132,26 +132,26 @@ class InstanceManager:
             if result.returncode != 0:
                 raise Exception(f"jpcinslist failed: {result.stderr}")
             
-            # Parse instance names (format: instance_id=instance_name)
+            # Get hostname
+            hostname = self._get_instance_host()
+            
+            # Parse instance IDs (one per line, as seen output: 41003, 62026, etc.)
             for line in result.stdout.strip().split('\n'):
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or not line.isdigit():
                     continue
-                if '=' in line:
-                    parts = line.split('=', 1)
-                    instance_id = parts[0].strip()
-                    instance_name = parts[1].strip() if len(parts) > 1 else instance_id
-                    
-                    # Get host info for this instance
-                    host = self._get_instance_host()
-                    
-                    instances.append({
-                        'id': instance_id,
-                        'name': instance_name,
-                        'host': host,
-                        'url': f"https://{host}",
-                        'type': 'storage'
-                    })
+                
+                instance_id = line
+                # Use ID as name too
+                instance_name = line
+                
+                instances.append({
+                    'id': instance_id,
+                    'name': instance_name,
+                    'host': hostname,
+                    'url': f"https://{hostname}",
+                    'type': 'storage'
+                })
             
             logger.info(f"Found {len(instances)} instances from jpcinslist")
             
