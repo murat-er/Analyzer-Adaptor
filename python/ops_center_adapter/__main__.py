@@ -44,6 +44,17 @@ def parse_args():
         help='Run in scheduled/cron mode'
     )
     parser.add_argument(
+        '--continuous', '-c',
+        action='store_true',
+        help='Run continuously until stopped (for daemon mode)'
+    )
+    parser.add_argument(
+        '--interval',
+        type=int,
+        default=300,
+        help='Interval in seconds between runs (default: 300)'
+    )
+    parser.add_argument(
         '--register-db',
         action='store_true',
         help='Register database schema'
@@ -147,6 +158,18 @@ def main():
     
     if args.create_instances:
         create_instances(config)
+        return 0
+    
+    if args.continuous:
+        import time
+        logger.info(f"Running in continuous mode (interval: {args.interval}s, Ctrl+C to stop)")
+        try:
+            while True:
+                run_etl(config, scheduled=True)
+                logger.info(f"Sleeping for {args.interval}s...")
+                time.sleep(args.interval)
+        except KeyboardInterrupt:
+            logger.info("Stopped by user")
         return 0
     
     if args.scheduled:
