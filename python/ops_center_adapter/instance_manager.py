@@ -149,7 +149,7 @@ class InstanceManager:
                     'id': instance_id,
                     'name': instance_name,
                     'host': hostname,
-                    'url': f"https://{hostname}",
+                    'url': self._config.ops_center_url or f"https://{hostname}",
                     'type': 'storage'
                 })
             
@@ -217,11 +217,13 @@ class InstanceManager:
                     })
         
         if not instances:
+            # Use config's ops_center_url or localhost:24221
+            base_url = self._config.ops_center_url or 'http://localhost:24221'
             instances.append({
                 'id': 'default',
                 'name': 'default',
                 'host': 'localhost',
-                'url': self._config.ops_center_url or 'http://localhost:8080',
+                'url': base_url,
                 'type': 'storage'
             })
         
