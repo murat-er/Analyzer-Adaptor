@@ -149,19 +149,36 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points - one by one via HTTP API
+            # Write points - first point creates measurement, rest in batch
             if points and len(points) > 0:
                 try:
-                    # Write each point individually
-                    for point in points:
-                        line = point.to_line_protocol()
-                        
-                        import urllib.request
-                        url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
+                    # Write first point to create measurement
+                    first_line = points[0].to_line_protocol()
+                    
+                    import urllib.request
+                    url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
+                    
+                    req = urllib.request.Request(
+                        url,
+                        data=first_line.encode('utf-8'),
+                        headers={
+                            'Authorization': f'Token {self._config.influxdb_token}',
+                            'Content-Type': 'text/plain'
+                        },
+                        method='POST'
+                    )
+                    
+                    with urllib.request.urlopen(req) as response:
+                        if response.status != 204:
+                            raise Exception(f"First write HTTP {response.status}")
+                    
+                    # Now write remaining points in batch
+                    if len(points) > 1:
+                        lines = "\n".join([p.to_line_protocol() for p in points[1:]])
                         
                         req = urllib.request.Request(
                             url,
-                            data=line.encode('utf-8'),
+                            data=lines.encode('utf-8'),
                             headers={
                                 'Authorization': f'Token {self._config.influxdb_token}',
                                 'Content-Type': 'text/plain'
@@ -171,7 +188,7 @@ class InfluxClient:
                         
                         with urllib.request.urlopen(req) as response:
                             if response.status != 204:
-                                raise Exception(f"HTTP {response.status}")
+                                raise Exception(f"Batch write HTTP {response.status}")
                     
                     result.set_points_written(len(points))
                     logger.info(f"Wrote {len(points)} points to InfluxDB")
