@@ -149,32 +149,32 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points - using HTTP API directly 
+            # Write points - one by one via HTTP API
             if points and len(points) > 0:
                 try:
-                    # Convert points to line protocol
-                    lines = "\n".join([p.to_line_protocol() for p in points])
+                    # Write each point individually
+                    for point in points:
+                        line = point.to_line_protocol()
+                        
+                        import urllib.request
+                        url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
+                        
+                        req = urllib.request.Request(
+                            url,
+                            data=line.encode('utf-8'),
+                            headers={
+                                'Authorization': f'Token {self._config.influxdb_token}',
+                                'Content-Type': 'text/plain'
+                            },
+                            method='POST'
+                        )
+                        
+                        with urllib.request.urlopen(req) as response:
+                            if response.status != 204:
+                                raise Exception(f"HTTP {response.status}")
                     
-                    # Write via HTTP
-                    import urllib.request
-                    url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
-                    
-                    req = urllib.request.Request(
-                        url,
-                        data=lines.encode('utf-8'),
-                        headers={
-                            'Authorization': f'Token {self._config.influxdb_token}',
-                            'Content-Type': 'text/plain'
-                        },
-                        method='POST'
-                    )
-                    
-                    with urllib.request.urlopen(req) as response:
-                        if response.status == 204:
-                            result.set_points_written(len(points))
-                            logger.info(f"Wrote {len(points)} points to InfluxDB")
-                        else:
-                            raise Exception(f"HTTP {response.status}")
+                    result.set_points_written(len(points))
+                    logger.info(f"Wrote {len(points)} points to InfluxDB")
                     
                 except Exception as e:
                     logger.error(f"Failed to write to InfluxDB: {e}")
