@@ -135,6 +135,13 @@ class DefinitionReader:
         Returns:
             List of definition keys
         """
+        if not self._definitions:
+            self._load_definitions()
+        
+        logger.info(f"Total definitions loaded: {len(self._definitions)}")
+        for key in self._definitions.keys():
+            logger.info(f"  - {key}")
+        
         return list(self._definitions.keys())
     
     @property
