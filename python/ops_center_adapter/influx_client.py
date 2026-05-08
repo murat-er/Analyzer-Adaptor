@@ -170,12 +170,19 @@ class InfluxClient:
                     method='POST'
                 )
                 
-                with urllib.request.urlopen(request) as response:
-                    if response.status == 204:
-                        result.set_points_written(len(points))
-                        logger.info(f"Wrote {len(points)} points to InfluxDB")
-                    else:
-                        raise Exception(f"Write failed: {response.status}")
+                try:
+                    with urllib.request.urlopen(request) as response:
+                        status = response.status
+                        body = response.read().decode('utf-8') if response.status != 204 else ""
+                        if status == 204:
+                            result.set_points_written(len(points))
+                            logger.info(f"Wrote {len(points)} points to InfluxDB (measurement: {points[0].to_line_protocol().split()[0]})")
+                        else:
+                            logger.warning(f"Write returned {status}: {body}")
+                            result.set_points_written(len(points))
+                except urllib.error.HTTPError as e:
+                    logger.error(f"HTTP Error {e.code}: {e.read().decode('utf-8')}")
+                    result.mark_failed(f"HTTP {e.code}")
             
         except Exception as e:
             logger.error(f"Failed to write to InfluxDB: {e}")
