@@ -149,18 +149,32 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points - using direct synchronous write 
+            # Write points - using HTTP API directly 
             if points and len(points) > 0:
                 try:
-                    # Write directly using client
-                    self._write_api.write(
-                        bucket=self._config.influxdb_bucket,
-                        org=self._config.influxdb_org,
-                        record=points
+                    # Convert points to line protocol
+                    lines = "\n".join([p.to_line_protocol() for p in points])
+                    
+                    # Write via HTTP
+                    import urllib.request
+                    url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
+                    
+                    req = urllib.request.Request(
+                        url,
+                        data=lines.encode('utf-8'),
+                        headers={
+                            'Authorization': f'Token {self._config.influxdb_token}',
+                            'Content-Type': 'text/plain'
+                        },
+                        method='POST'
                     )
                     
-                    result.set_points_written(len(points))
-                    logger.info(f"Wrote {len(points)} points to InfluxDB")
+                    with urllib.request.urlopen(req) as response:
+                        if response.status == 204:
+                            result.set_points_written(len(points))
+                            logger.info(f"Wrote {len(points)} points to InfluxDB")
+                        else:
+                            raise Exception(f"HTTP {response.status}")
                     
                 except Exception as e:
                     logger.error(f"Failed to write to InfluxDB: {e}")
@@ -187,10 +201,9 @@ class InfluxClient:
         """
         try:
             measurement = record.get('_measurement', 'storage')
-            timestamp = record.get('_time', datetime.utcnow())
             
             # Create point
-            point = Point(measurement).time(timestamp)
+            point = Point(measurement)
             
             # Add tags
             for key, value in record.get('tags', {}).items():
