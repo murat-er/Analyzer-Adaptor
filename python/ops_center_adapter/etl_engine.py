@@ -151,7 +151,7 @@ class EtlEngine:
         query_parts = [
             f"agentType=RAID",
             f'pfmHostName={instance.get("instance_host", "")}',
-            f"agentInstanceName={instance.get('instance_name', instance.get('id', '').lower())}",
+            f"agentInstanceName={instance.get('instance_name', instance.get('instance_id', '')))}",
             f"fields={fields_value}",
         ]
         
@@ -173,7 +173,7 @@ class EtlEngine:
         # Add authentication if configured
         if self._config.ops_center_user:
             credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
-            headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode()).decode()}"
+            headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode('.lower())).decode()}"
         
         try:
             response = self._session.get(
@@ -280,7 +280,7 @@ class EtlEngine:
         import base64
         
         credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
-        return base64.b64encode(credentials.encode()).decode()
+        return base64.b64encode(credentials.encode('.lower())).decode()
     
     def transform(
         self,
