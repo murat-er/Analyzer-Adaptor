@@ -106,10 +106,20 @@ class DefinitionReader:
                 field_key_to_col_names=transform.get('fieldKeyToColNames', [])
             )
             
+            # Get loadTargetMeasurement from different possible locations
+            definition_data = data.get('definition', {})
+            load_target = definition_data.get('loadTargetMeasurement', '')
+            if not load_target:
+                factory_param = definition_data.get('factoryParameter', {})
+                load_target = factory_param.get('loadTargetMeasurement', '')
+                # Check measurement field for custom logic
+                if not load_target:
+                    load_target = factory_param.get('measurement', '')
+            
             return EtlDefinition(
                 etl_type=data.get('type', 'simple'),
                 etl_key=data.get('etlKey', json_file.stem),
-                load_target_measurement=data.get('definition', {}).get('loadTargetMeasurement', ''),
+                load_target_measurement=load_target,
                 extract_targets=extract_targets,
                 transform=transform_def
             )
