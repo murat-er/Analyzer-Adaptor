@@ -185,7 +185,7 @@ class InstanceManager:
                 # Parse hostname from output
                 # Format: "hostname  : HDS-EF-GBZ-PROBE"
                 for line in result.stdout.strip().split('\n'):
-                    line = line.strip().lower()
+                    line = line.strip()
                     if 'hostname' in line and ':' in line:
                         return line.split(':', 1)[1].strip()
             
