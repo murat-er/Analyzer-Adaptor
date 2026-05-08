@@ -90,8 +90,7 @@ class InfluxClient:
                 batch_size=1000,
                 flush_interval=5000,
                 retry_interval=1000,
-                max_retries=3,
-                queue_write_at=0  # Synchronous
+                max_retries=3
             )
             self._write_api = self._client.write_api(write_options)
             
