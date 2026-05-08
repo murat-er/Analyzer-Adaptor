@@ -192,7 +192,9 @@ class InfluxClient:
                     result.mark_failed(f"HTTP {e.code}")
             
         except Exception as e:
+            import traceback
             logger.error(f"Failed to write to InfluxDB: {e}")
+            logger.error(f"Stack: {traceback.format_exc()}")
             result.mark_failed(str(e))
         
         return result
