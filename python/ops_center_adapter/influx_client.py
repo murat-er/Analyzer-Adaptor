@@ -149,16 +149,33 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points
+            # Write points - direct HTTP write
             if points:
-                self._write_api.write(
-                    bucket=self._config.influxdb_bucket,
-                    org=self._config.influxdb_org,
-                    record=points
+                # Use line protocol for synchronous write
+                lines = "\n".join([p.to_line_protocol() for p in points])
+                
+                # Write via HTTP POST
+                import urllib.request
+                import urllib.parse
+                
+                url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
+                
+                request = urllib.request.Request(
+                    url, 
+                    data=lines.encode('utf-8'),
+                    headers={
+                        'Authorization': f'Token {self._config.influxdb_token}',
+                        'Content-Type': 'text/plain'
+                    },
+                    method='POST'
                 )
-                self._write_api.flush()
-                result.set_points_written(len(points))
-                logger.info(f"Wrote {len(points)} points to InfluxDB")
+                
+                with urllib.request.urlopen(request) as response:
+                    if response.status == 204:
+                        result.set_points_written(len(points))
+                        logger.info(f"Wrote {len(points)} points to InfluxDB")
+                    else:
+                        raise Exception(f"Write failed: {response.status}")
             
         except Exception as e:
             logger.error(f"Failed to write to InfluxDB: {e}")
