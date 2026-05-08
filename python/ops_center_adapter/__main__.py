@@ -128,6 +128,9 @@ def run_etl(config: Config, scheduled: bool = False):
     # Finalize raid agent report
     raid_reporter.save()
     
+    # Close InfluxDB client
+    influx_client.close()
+    
     logger.info("ETL process completed")
 
 

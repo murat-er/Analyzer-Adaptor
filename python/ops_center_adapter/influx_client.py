@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 
 # Try influxdb-client v3 first, fallback to influxdb v2
 try:
-    from influxdb_client import InfluxDBClient, Point
+    from influxdb_client import InfluxDBClient, Point, WriteOptions
     INFLUXDB_V3 = True
 except ImportError:
     try:
@@ -85,8 +85,14 @@ class InfluxClient:
                 org=self._config.influxdb_org
             )
             
-            # Use simple write_api without options for v2
-            self._write_api = self._client.write_api()
+            # Use write_api with WriteOptions for better batching
+            write_options = WriteOptions(
+                batch_size=1000,
+                flush_interval=5000,
+                retry_interval=1000,
+                max_retries=3
+            )
+            self._write_api = self._client.write_api(write_options)
             
             logger.info(f"Connected to InfluxDB at {self._config.influxdb_url}")
             
@@ -150,6 +156,7 @@ class InfluxClient:
                     org=self._config.influxdb_org,
                     record=points
                 )
+                self._write_api.flush()
                 result.set_points_written(len(points))
                 logger.info(f"Wrote {len(points)} points to InfluxDB")
             
