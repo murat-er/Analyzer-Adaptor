@@ -105,8 +105,18 @@ def run_etl(config: Config, scheduled: bool = False):
             # Transform data
             transformed_data = etl_engine.transform(extracted_data, instance)
             
-            # Load to InfluxDB
-            influx_client.write(transformed_data)
+            # Load to InfluxDB (grouped by measurement)
+            measurement_groups: dict = {}
+            for record in transformed_data:
+                measurement = record.get('_measurement', 'storage')
+                if measurement not in measurement_groups:
+                    measurement_groups[measurement] = []
+                measurement_groups[measurement].append(record)
+            
+            for measurement, data in measurement_groups.items():
+                if data:
+                    result = influx_client.write(data)
+                    logger.info(f"Wrote {result.points_written} points to {measurement}")
             
             # Update raid agent result
             raid_reporter.add_result(instance, transformed_data)
