@@ -310,6 +310,7 @@ class EtlEngine:
                     definition,
                     instance
                 )
+                logger.info(f"Transformed {len(transformed_records)} records for {etl_key}")
                 transformed.extend(transformed_records)
             except Exception as e:
                 logger.error(f"Transform failed for {etl_key}: {e}")
