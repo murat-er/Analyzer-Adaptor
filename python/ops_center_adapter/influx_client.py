@@ -85,12 +85,13 @@ class InfluxClient:
                 org=self._config.influxdb_org
             )
             
-            # Use write_api with WriteOptions for better batching
+            # Use write_api with WriteOptions for synchronous write
             write_options = WriteOptions(
                 batch_size=1000,
                 flush_interval=5000,
                 retry_interval=1000,
-                max_retries=3
+                max_retries=3,
+                queue_write_at=0  # Synchronous
             )
             self._write_api = self._client.write_api(write_options)
             
