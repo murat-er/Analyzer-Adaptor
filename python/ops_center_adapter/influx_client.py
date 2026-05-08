@@ -149,17 +149,15 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points - using influxdb client write_api (synchronous)
+            # Write points - using direct synchronous write 
             if points and len(points) > 0:
                 try:
-                    # Use synchronous write
+                    # Write directly using client
                     self._write_api.write(
                         bucket=self._config.influxdb_bucket,
                         org=self._config.influxdb_org,
                         record=points
                     )
-                    # Flush synchronously
-                    self._write_api.flush()
                     
                     result.set_points_written(len(points))
                     logger.info(f"Wrote {len(points)} points to InfluxDB")
@@ -177,7 +175,7 @@ class InfluxClient:
             result.mark_failed(str(e))
 
         return result
-    
+
     def _build_point(self, record: Dict[str, Any]) -> Optional[Point]:
         """Build InfluxDB point from record.
         
