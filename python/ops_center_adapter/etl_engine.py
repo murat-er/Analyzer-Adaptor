@@ -151,7 +151,7 @@ class EtlEngine:
         query_parts = [
             f"agentType=RAID",
             f'pfmHostName={instance.get("instance_host", "")}',
-            f"agentInstanceName={instance.get('instance_name', instance.get('id', ''))}",
+            f"agentInstanceName={instance.get('instance_name', instance.get('id', '').lower())}",
             f"fields={fields_value}",
         ]
         
