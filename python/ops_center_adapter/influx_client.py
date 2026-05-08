@@ -191,6 +191,7 @@ class InfluxClient:
                                 raise Exception(f"Batch write HTTP {response.status}")
                     
                     result.set_points_written(len(points))
+            self._write_api.flush()
                     logger.info(f"Wrote {len(points)} points to InfluxDB")
                     
                 except Exception as e:
