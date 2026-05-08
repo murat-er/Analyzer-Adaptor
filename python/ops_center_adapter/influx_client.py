@@ -150,7 +150,7 @@ class InfluxClient:
                     points.append(point)
             
             # Write points - direct HTTP write
-            if points:
+            if points and len(points) > 0:
                 # Use line protocol for synchronous write
                 lines = "\n".join([p.to_line_protocol() for p in points])
                 
@@ -176,7 +176,14 @@ class InfluxClient:
                         body = response.read().decode('utf-8') if response.status != 204 else ""
                         if status == 204:
                             result.set_points_written(len(points))
-                            logger.info(f"Wrote {len(points)} points to InfluxDB (measurement: {points[0].to_line_protocol().split()[0]})")
+                            # Get measurement name safely
+                            try:
+                                line = points[0].to_line_protocol()
+                                parts = line.split(',')
+                                meas = parts[0].split()[0] if parts else "unknown"
+                            except:
+                                meas = "unknown"
+                            logger.info(f"Wrote {len(points)} points to InfluxDB (measurement: {meas})")
                         else:
                             logger.warning(f"Write returned {status}: {body}")
                             result.set_points_written(len(points))
