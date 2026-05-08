@@ -142,68 +142,30 @@ class InfluxClient:
             return result
         
         try:
-            # Build points
+            # Build points and write directly
             points = []
             for record in data:
                 point = self._build_point(record)
                 if point:
                     points.append(point)
-            
-            # Write points - first point creates measurement, rest in batch
-            if points and len(points) > 0:
-                try:
-                    # Write first point to create measurement
-                    first_line = points[0].to_line_protocol()
-                    
-                    import urllib.request
-                    url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
-                    
-                    req = urllib.request.Request(
-                        url,
-                        data=first_line.encode('utf-8'),
-                        headers={
-                            'Authorization': f'Token {self._config.influxdb_token}',
-                            'Content-Type': 'text/plain'
-                        },
-                        method='POST'
-                    )
-                    
-                    with urllib.request.urlopen(req) as response:
-                        if response.status != 204:
-                            raise Exception(f"First write HTTP {response.status}")
-                    
-                    # Now write remaining points in batch
-                    if len(points) > 1:
-                        lines = "\n".join([p.to_line_protocol() for p in points[1:]])
-                        
-                        req = urllib.request.Request(
-                            url,
-                            data=lines.encode('utf-8'),
-                            headers={
-                                'Authorization': f'Token {self._config.influxdb_token}',
-                                'Content-Type': 'text/plain'
-                            },
-                            method='POST'
-                        )
-                        
-                        with urllib.request.urlopen(req) as response:
-                            if response.status != 204:
-                                raise Exception(f"Batch write HTTP {response.status}")
-                    
-                    result.set_points_written(len(points))
-                    logger.info(f"Wrote {len(points)} points to InfluxDB")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to write to InfluxDB: {e}")
-                    import traceback
-                    logger.error(f"Stack: {traceback.format_exc()}")
-                    result.mark_failed(str(e))
-        
+
+            if not points:
+                return result
+
+            # Use write_api directly
+            self._write_api.write(
+                org=self._config.influxdb_org,
+                bucket=self._config.influxdb_bucket,
+                record=points
+            )
+
+            result.set_points_written(len(points))
+            logger.info(f"Wrote {len(points)} points to InfluxDB")
+
         except Exception as e:
-            import traceback
             logger.error(f"Failed to write to InfluxDB: {e}")
-            logger.error(f"Stack: {traceback.format_exc()}")
             result.mark_failed(str(e))
+
 
         return result
 
