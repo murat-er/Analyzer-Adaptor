@@ -56,6 +56,7 @@ class EtlEngine:
                         definition
                     )
                     results[etl_key] = data
+                    logger.info(f"Extracted {len(data) if data else 0} records for {etl_key} -> {definition.load_target_measurement}")
             except Exception as e:
                 logger.error(f"Failed to extract for {etl_key}: {e}")
                 continue
