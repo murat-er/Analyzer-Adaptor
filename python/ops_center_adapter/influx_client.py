@@ -149,54 +149,33 @@ class InfluxClient:
                 if point:
                     points.append(point)
             
-            # Write points - direct HTTP write
+            # Write points - using influxdb client write_api (synchronous)
             if points and len(points) > 0:
-                # Use line protocol for synchronous write
-                lines = "\n".join([p.to_line_protocol() for p in points])
-                
-                # Write via HTTP POST
-                import urllib.request
-                import urllib.parse
-                
-                url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
-                
-                request = urllib.request.Request(
-                    url, 
-                    data=lines.encode('utf-8'),
-                    headers={
-                        'Authorization': f'Token {self._config.influxdb_token}',
-                        'Content-Type': 'text/plain'
-                    },
-                    method='POST'
-                )
-                
                 try:
-                    with urllib.request.urlopen(request) as response:
-                        status = response.status
-                        body = response.read().decode('utf-8') if response.status != 204 else ""
-                        if status == 204:
-                            result.set_points_written(len(points))
-                            # Get measurement name safely
-                            try:
-                                line = points[0].to_line_protocol()
-                                parts = line.split(',')
-                                meas = parts[0].split()[0] if parts else "unknown"
-                            except:
-                                meas = "unknown"
-                            logger.info(f"Wrote {len(points)} points to InfluxDB (measurement: {meas})")
-                        else:
-                            logger.warning(f"Write returned {status}: {body}")
-                            result.set_points_written(len(points))
-                except urllib.error.HTTPError as e:
-                    logger.error(f"HTTP Error {e.code}: {e.read().decode('utf-8')}")
-                    result.mark_failed(f"HTTP {e.code}")
-            
+                    # Use synchronous write
+                    self._write_api.write(
+                        bucket=self._config.influxdb_bucket,
+                        org=self._config.influxdb_org,
+                        record=points
+                    )
+                    # Flush synchronously
+                    self._write_api.flush()
+                    
+                    result.set_points_written(len(points))
+                    logger.info(f"Wrote {len(points)} points to InfluxDB")
+                    
+                except Exception as e:
+                    logger.error(f"Failed to write to InfluxDB: {e}")
+                    import traceback
+                    logger.error(f"Stack: {traceback.format_exc()}")
+                    result.mark_failed(str(e))
+        
         except Exception as e:
             import traceback
             logger.error(f"Failed to write to InfluxDB: {e}")
             logger.error(f"Stack: {traceback.format_exc()}")
             result.mark_failed(str(e))
-        
+
         return result
     
     def _build_point(self, record: Dict[str, Any]) -> Optional[Point]:
