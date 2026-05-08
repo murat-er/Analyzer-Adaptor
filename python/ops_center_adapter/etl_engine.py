@@ -150,7 +150,7 @@ class EtlEngine:
         # Build query string manually - don't use params dict to avoid encoding
         query_parts = [
             f"agentType=RAID",
-            f"pfmHostName={instance_host.upper()}",
+            f"pfmHostName={instance.get("instance_name", instance.get("id", ""))}",
             f"agentInstanceName={instance.get('instance_name', instance.get('id', ''))}",
             f"fields={fields_value}",
         ]
