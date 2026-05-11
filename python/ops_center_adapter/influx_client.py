@@ -8,20 +8,50 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-# Try influxdb-client v3 first, fallback to influxdb v2
-try:
-    from influxdb_client import InfluxDBClient, Point, WriteOptions
-    INFLUXDB_V3 = True
-except ImportError:
-    try:
-        from influxdb import InfluxDBClient
-        from influxdb.models import Point
-        INFLUXDB_V3 = False
-    except ImportError:
-        # No library installed
-        InfluxDBClient = None
-        Point = None
-        INFLUXDB_V3 = False
+# Use direct HTTP API - avoid async batch issues
+import urllib.request
+import urllib.error
+
+# Simple Point class for line protocol
+class Point:
+    """Simple Point class."""
+    def __init__(self, measurement: str):
+        self._measurement = measurement
+        self._tags = {}
+        self._fields = {}
+    
+    def tag(self, name: str, value: str):
+        self._tags[name] = value
+        return self
+    
+    def field(self, name: str, value):
+        self._fields[name] = value
+        return self
+    
+    def to_line_protocol(self) -> str:
+        line = self._measurement
+        if self._tags:
+            tags = ','.join([f'{k}={v}' for k,v in sorted(self._tags.items())])
+            line += ',' + tags
+        field_parts = []
+        for k,v in sorted(self._fields.items()):
+            if v is None:
+                continue
+            if isinstance(v, bool):
+                field_parts.append(f"{k}={str(v).lower()}")
+            elif isinstance(v, int):
+                field_parts.append(f"{k}i={v}")
+            elif isinstance(v, float):
+                field_parts.append(f"{k}={v}")
+            else:
+                field_parts.append(f'{k}="{v}"')
+        line += ' ' + ','.join(field_parts)
+        line += f' {int(datetime.now().timestamp() * 1e9)}'
+        return line
+
+InfluxDBClient = None
+Point = Point
+INFLUXDB_V3 = False
 
 from .config import Config
 
@@ -87,8 +117,8 @@ class InfluxClient:
             
             # Use write_api with WriteOptions for synchronous write
             write_options = WriteOptions(
-                batch_size=1,
-                flush_interval=0,
+                batch_size=1000,
+                flush_interval=5000,
                 retry_interval=1000,
                 max_retries=3
             )
