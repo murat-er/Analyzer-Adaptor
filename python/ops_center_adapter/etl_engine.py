@@ -12,6 +12,7 @@ import requests
 
 from .config import Config
 from .definition_reader import DefinitionReader, EtlDefinition
+from .custom_logic_handler import CustomLogicHandler
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +31,9 @@ class EtlEngine:
         self._definition_reader = DefinitionReader(config.definition_dir)
         
         self._session = requests.Session()
+        
+        # Initialize custom logic handler
+        self._custom_handler = CustomLogicHandler(config, self)
         
     def extract(self, instance: Dict[str, Any]) -> Dict[str, Any]:
         """Extract data from OPS Center for an instance.
@@ -51,10 +55,19 @@ class EtlEngine:
             try:
                 definition = self._definition_reader.get_definition(etl_key)
                 if definition:
-                    data = self._extract_for_definition(
-                        instance,
-                        definition
-                    )
+                    # Check if custom_logic type
+                    if definition.etl_type == "custom_logic":
+                        # Use custom handler
+                        data = self._custom_handler.process(
+                            etl_key,
+                            instance,
+                            definition._definition
+                        )
+                    else:
+                        data = self._extract_for_definition(
+                            instance,
+                            definition
+                        )
                     results[etl_key] = data
                     logger.info(f"Extracted {len(data) if data else 0} records for {etl_key} -> {definition.load_target_measurement}")
             except Exception as e:
@@ -150,8 +163,8 @@ class EtlEngine:
         # Build query string manually - don't use params dict to avoid encoding
         query_parts = [
             f"agentType=RAID",
-            f'pfmHostName={instance.get("instance_host", "")}',
-            f"agentInstanceName={instance.get('instance_name', instance.get('instance_id', '')))}",
+            f"pfmHostName={instance_host.upper()}",
+            f"agentInstanceName={instance.get('instance_name', instance.get('id', ''))}",
             f"fields={fields_value}",
         ]
         
@@ -173,7 +186,7 @@ class EtlEngine:
         # Add authentication if configured
         if self._config.ops_center_user:
             credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
-            headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode('.lower())).decode()}"
+            headers['Authorization'] = f"Basic {base64.b64encode(credentials.encode()).decode()}"
         
         try:
             response = self._session.get(
@@ -280,7 +293,7 @@ class EtlEngine:
         import base64
         
         credentials = f"{self._config.ops_center_user}:{self._config.ops_center_password}"
-        return base64.b64encode(credentials.encode('.lower())).decode()
+        return base64.b64encode(credentials.encode()).decode()
     
     def transform(
         self,

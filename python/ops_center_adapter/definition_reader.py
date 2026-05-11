@@ -41,6 +41,7 @@ class EtlDefinition:
     load_target_measurement: str
     extract_targets: List[ExtractTarget]
     transform: TransformDefinition
+    _definition: Dict[str, Any] = None
 
 
 class DefinitionReader:
@@ -121,7 +122,8 @@ class DefinitionReader:
                 etl_key=data.get('etlKey', json_file.stem),
                 load_target_measurement=load_target,
                 extract_targets=extract_targets,
-                transform=transform_def
+                transform=transform_def,
+                _definition=data.get('definition', {})
             )
             
         except Exception as e:
