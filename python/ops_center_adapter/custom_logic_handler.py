@@ -79,6 +79,7 @@ class CustomLogicHandler:
             
             # 3. Get PI_LDE - LDEV extended stats
             ldev_ext = self._ops._call_ops_center_api(
+                instance,
                 
                 record_name='PI_LDE',
                 extract_type='history',
@@ -89,6 +90,7 @@ class CustomLogicHandler:
             
             # 4. Get PD_LDC - LDEV configuration
             ldev_conf = self._ops._call_ops_center_api(
+                instance,
                 
                 record_name='PD_LDC',
                 extract_type='latest',
@@ -203,6 +205,7 @@ class CustomLogicHandler:
             )
             
             ldev_ext = self._ops._call_ops_center_api(
+                instance,
                 
                 record_name='PI_LDE',
                 extract_type='history',
