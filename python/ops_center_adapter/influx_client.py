@@ -87,8 +87,8 @@ class InfluxClient:
             
             # Use write_api with WriteOptions for synchronous write
             write_options = WriteOptions(
-                batch_size=1000,
-                flush_interval=5000,
+                batch_size=1,
+                flush_interval=0,
                 retry_interval=1000,
                 max_retries=3
             )
@@ -191,7 +191,6 @@ class InfluxClient:
                                 raise Exception(f"Batch write HTTP {response.status}")
                     
                     result.set_points_written(len(points))
-            self._write_api.flush()
                     logger.info(f"Wrote {len(points)} points to InfluxDB")
                     
                 except Exception as e:
