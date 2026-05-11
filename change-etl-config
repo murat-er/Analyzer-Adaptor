@@ -1,0 +1,165 @@
+#!/bin/bash -eu
+
+#
+# SCI. All Rights Reserved. Copyright (C) 2024, Hitachi Vantara, Ltd.
+#
+
+source "$(dirname $(readlink -f $0))/sbin/.internal/paths"
+readonly ETL_COLLECTION_INTERVAL_SPECIFIABLE_VALUES_DEF=${SBIN_DIR}/validate-etl-collection-interval
+readonly ETL_COLLECTION_ENABLED_SPECIFIABLE_VALUES_DEF=${SBIN_DIR}/validate-etl-collection-enabled
+source "${ETL_COLLECTION_INTERVAL_SPECIFIABLE_VALUES_DEF}"
+source "${ETL_COLLECTION_ENABLED_SPECIFIABLE_VALUES_DEF}"
+source "${MESSAGES_DEF}"
+source "${CRON_CONF_KEYS}"
+
+readonly TMP_CRON_CONF=$(mktemp "/tmp/${0##*/}.tmp.XXXXXX")
+
+readonly USAGE_PART="Usage:
+  $0 [--display|--minutes <value>|--enable|--disable]
+"
+
+readonly DESCRIPTION_PART="
+Description:
+  Change etl (data collection) configuration
+"
+
+readonly OPTION_PART="
+Options:
+  --display     display current configuration
+
+  --minutes     set the collection interval (minutes). Specifiable values:
+
+        @COLLECTION_INTERVAL_SPECIFIABLE_VALUES_FOR_HELP@
+
+  --enable      enable scheduled etl.
+
+  --disable     disable scheduled etl.
+"
+
+declare -Ar OPTION_NAME_TO_COMPLETE_MSG=(
+  ["--minutes"]="${KNAQ60406I}"
+  ["--enable"]="${KNAQ60407I}"
+  ["--disable"]="${KNAQ60408I}"
+)
+
+function join_specifiable_values() {
+  local -r delimiter=$1
+  shift
+  local specifiable_values_array=("$@")
+  specifiable_values_string=${specifiable_values_array[0]}
+  no_head_specifiable_values_string=("${specifiable_values_array[@]:1}")
+  for _value in "${no_head_specifiable_values_string[@]}"
+  do
+    specifiable_values_string="${specifiable_values_string}${delimiter}${_value}"
+  done
+  echo "${specifiable_values_string}"
+}
+
+function display_command_usage() {
+  local -r command_usage_message=$(resolve_change_etl_config_usage)
+  cat << _EOF_
+${command_usage_message}
+
+_EOF_
+  exit 0
+}
+
+function option_syntax_err_and_display_usage() {
+  echo "${OPTION_SYNTAX_ERR_MSG}"
+  display_command_usage
+  exit 1
+}
+
+function replace_config_value(){
+  local -r conf_key=$1
+  local -r conf_value=$2
+  local -r target_file=$3
+  sed -i -e "/^${conf_key}/s/=\(.*\)/=${conf_value}/" "${target_file}"
+}
+
+function update_collection_enabled() {
+  local -r specified_etl_collection_enabled=$1
+  validate_etl_collection_enabled "${specified_etl_collection_enabled}"
+  replace_config_value "${ETL_COLLECTION_ENABLED_KEY}" "${specified_etl_collection_enabled}" "${TMP_CRON_CONF}"
+}
+
+function update_collection_interval() {
+  local -r specified_collection_interval=$1
+  validate_collection_interval "${specified_collection_interval}"
+  replace_config_value "${ETL_COLLECTION_INTERVAL_IN_MINUTES_KEY}" "${specified_collection_interval}" "${TMP_CRON_CONF}"
+}
+
+function resolve_change_etl_config_usage() {
+  collection_interval_specifiable_values_for_help=$(join_specifiable_values ", " "${COLLECTION_INTERVAL_SPECIFIABLE_VALUES[@]}")
+  replaced_option_part=${OPTION_PART/@COLLECTION_INTERVAL_SPECIFIABLE_VALUES_FOR_HELP@/"${collection_interval_specifiable_values_for_help}"}
+  command_usage="${USAGE_PART}${DESCRIPTION_PART}${replaced_option_part}"
+
+  echo -e "${command_usage}"
+}
+
+function resolve_change_completed_msg() {
+  local -r specified_option_name=$1
+
+  echo "${OPTION_NAME_TO_COMPLETE_MSG["${specified_option_name}"]}"
+}
+
+cleanup() {
+  [[ -f "${TMP_CRON_CONF}" ]] && rm -f "${TMP_CRON_CONF}"
+}
+trap cleanup EXIT
+trap 'trap EXIT; cleanup; exit 1' SIGHUP SIGINT SIGTERM
+
+
+## put cron config file
+if [ ! -f "${USER_CRON_CONF}" ]; then
+  cp -p "${DEFAULT_USER_CRON_CONF}" "${USER_CRON_CONF}"
+fi
+
+## update cron conf
+cat "${USER_CRON_CONF}" > "${TMP_CRON_CONF}"
+
+SPECIFIED_OPTION_NAME=""
+if [ $# = 0 ]; then
+  display_command_usage
+else
+  OPT=$1
+  case $OPT in
+    --display)
+      grep -v -e '^\s*#' -e '^\s*$' "${USER_CRON_CONF}"
+      exit 0
+      ;;
+    --minutes)
+      if [ $# = 1 ]; then
+        option_syntax_err_and_display_usage
+      fi
+      SPECIFIED_COLLECTION_INTERVAL=$2
+      shift 2
+      update_collection_interval "${SPECIFIED_COLLECTION_INTERVAL}"
+      SPECIFIED_OPTION_NAME=${OPT}
+      ;;
+    --enable)
+      shift
+      update_collection_enabled true
+      SPECIFIED_OPTION_NAME=${OPT}
+      ;;
+    --disable)
+      shift
+      update_collection_enabled false
+      SPECIFIED_OPTION_NAME=${OPT}
+      ;;
+    *)
+      option_syntax_err_and_display_usage
+      ;;
+  esac
+fi
+
+## regenerate cron file
+if [ ! -f "${TMP_CRON_CONF}" ]; then
+  echo "${KNAQ60401E}"
+  exit 1
+fi
+
+cat "${TMP_CRON_CONF}" > "${USER_CRON_CONF}"
+${UPDATE_CRON}
+change_completed_msg=$(resolve_change_completed_msg "${SPECIFIED_OPTION_NAME}")
+echo -e "${change_completed_msg}"
