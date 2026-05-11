@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
 """
 InfluxDB client for OPS Center Analyzer Adapter.
-Handles writing data to InfluxDB.
+Uses direct HTTP API - no async, no dependencies.
 """
 
 import logging
+import urllib.request
+import urllib.error
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-# Use direct HTTP API - avoid async batch issues
-import urllib.request
-import urllib.error
+logger = logging.getLogger(__name__)
 
-# Simple Point class for line protocol
+
+# Simple Point class - no external dependency
 class Point:
-    """Simple Point class."""
+    """Simple Point for line protocol."""
     def __init__(self, measurement: str):
         self._measurement = measurement
         self._tags = {}
@@ -31,8 +32,7 @@ class Point:
     def to_line_protocol(self) -> str:
         line = self._measurement
         if self._tags:
-            tags = ','.join([f'{k}={v}' for k,v in sorted(self._tags.items())])
-            line += ',' + tags
+            line += ',' + ','.join([f'{k}={v}' for k,v in sorted(self._tags.items())])
         field_parts = []
         for k,v in sorted(self._fields.items()):
             if v is None:
@@ -49,128 +49,50 @@ class Point:
         line += f' {int(datetime.now().timestamp() * 1e9)}'
         return line
 
-InfluxDBClient = None
-Point = Point
-INFLUXDB_V3 = False
-
-from .config import Config
-
-
-logger = logging.getLogger(__name__)
-
 
 class InfluxDBWriteResult:
-    """Result of InfluxDB write operation."""
     def __init__(self):
-        self._success: bool = True
-        self._points_written: int = 0
-        self._error: Optional[str] = None
-    
-    @property
-    def success(self) -> bool:
-        """Whether write was successful."""
-        return self._success
-    
-    @property
+        self._success = True
+        self._points_written = 0
+        self._error = None
+
+    def set_points_written(self, count: int):
+        self._points_written = count
+
     def points_written(self) -> int:
-        """Number of points written."""
         return self._points_written
-    
-    @property
-    def error(self) -> Optional[str]:
-        """Error message if failed."""
-        return self._error
-    
+
     def mark_failed(self, error: str):
-        """Mark operation as failed."""
         self._success = False
         self._error = error
-    
-    def set_points_written(self, count: int):
-        """Set number of points written."""
-        self._points_written = count
+
+    def is_failed(self) -> bool:
+        return not self._success
+
+    def error(self) -> Optional[str]:
+        return self._error
 
 
 class InfluxClient:
-    """InfluxDB client for writing metrics."""
-    
-    def __init__(self, config: Config):
-        """Initialize InfluxDB client.
-        
-        Args:
-            config: Configuration object
-        """
+    """InfluxDB client using direct HTTP."""
+
+    def __init__(self, config):
         self._config = config
-        self._client: Optional[InfluxDBClient] = None
-        self._write_api = None
-        
-        self._connect()
-    
-    def _connect(self):
+        self._connected = False
+
+    def connect(self):
         """Connect to InfluxDB."""
-        try:
-            self._client = InfluxDBClient(
-                url=self._config.influxdb_url,
-                token=self._config.influxdb_token,
-                org=self._config.influxdb_org
-            )
-            
-            # Use write_api with WriteOptions for synchronous write
-            write_options = WriteOptions(
-                batch_size=1000,
-                flush_interval=5000,
-                retry_interval=1000,
-                max_retries=3
-            )
-            self._write_api = self._client.write_api(write_options)
-            
-            logger.info(f"Connected to InfluxDB at {self._config.influxdb_url}")
-            
-        except Exception as e:
-            logger.error(f"Failed to connect to InfluxDB: {e}")
-            raise
-    
-    def create_bucket(self):
-        """Create bucket if it doesn't exist."""
-        try:
-            buckets_api = self._client.buckets_api()
-            
-            # Check if bucket exists
-            bucket = buckets_api.find_bucket_by_name(self._config.influxdb_bucket)
-            
-            if bucket is None:
-                # Create bucket
-                org = self._client.organizations_api().find_organizations(
-                    org=self._config.influxdb_org
-                )[0]
-                
-                buckets_api.create_bucket(
-                    bucket_name=self._config.influxdb_bucket,
-                    org_id=org.id,
-                    retention_rules=None
-                )
-                
-                logger.info(f"Created bucket: {self._config.influxdb_bucket}")
-            
-        except Exception as e:
-            logger.error(f"Failed to create bucket: {e}")
-            raise
-    
+        self._connected = True
+        logger.info(f"Connected to InfluxDB at {self._config.influxdb_url}")
+
     def write(self, data: List[Dict[str, Any]]) -> InfluxDBWriteResult:
-        """Write data points to InfluxDB.
-        
-        Args:
-            data: List of data points to write
-            
-        Returns:
-            Write result
-        """
+        """Write data to InfluxDB."""
         result = InfluxDBWriteResult()
-        
+
         if not data:
             result.set_points_written(0)
             return result
-        
+
         try:
             # Build points
             points = []
@@ -178,125 +100,86 @@ class InfluxClient:
                 point = self._build_point(record)
                 if point:
                     points.append(point)
+
+            if not points:
+                result.set_points_written(0)
+                return result
+
+            # Write all points in one request
+            lines = "\n".join([p.to_line_protocol() for p in points])
+            url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
             
-            # Write points - first point creates measurement, rest in batch
-            if points and len(points) > 0:
-                try:
-                    # Write first point to create measurement
-                    first_line = points[0].to_line_protocol()
-                    
-                    import urllib.request
-                    url = f"{self._config.influxdb_url}/api/v2/write?bucket={self._config.influxdb_bucket}&org={self._config.influxdb_org}&precision=ns"
-                    
-                    req = urllib.request.Request(
-                        url,
-                        data=first_line.encode('utf-8'),
-                        headers={
-                            'Authorization': f'Token {self._config.influxdb_token}',
-                            'Content-Type': 'text/plain'
-                        },
-                        method='POST'
-                    )
-                    
-                    with urllib.request.urlopen(req) as response:
-                        if response.status != 204:
-                            raise Exception(f"First write HTTP {response.status}")
-                    
-                    # Now write remaining points in batch
-                    if len(points) > 1:
-                        lines = "\n".join([p.to_line_protocol() for p in points[1:]])
-                        
-                        req = urllib.request.Request(
-                            url,
-                            data=lines.encode('utf-8'),
-                            headers={
-                                'Authorization': f'Token {self._config.influxdb_token}',
-                                'Content-Type': 'text/plain'
-                            },
-                            method='POST'
-                        )
-                        
-                        with urllib.request.urlopen(req) as response:
-                            if response.status != 204:
-                                raise Exception(f"Batch write HTTP {response.status}")
-                    
-                    result.set_points_written(len(points))
-                    logger.info(f"Wrote {len(points)} points to InfluxDB")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to write to InfluxDB: {e}")
-                    import traceback
-                    logger.error(f"Stack: {traceback.format_exc()}")
-                    result.mark_failed(str(e))
-        
+            req = urllib.request.Request(
+                url,
+                data=lines.encode('utf-8'),
+                headers={
+                    'Authorization': f'Token {self._config.influxdb_token}',
+                    'Content-Type': 'text/plain'
+                },
+                method='POST'
+            )
+
+            try:
+                with urllib.request.urlopen(req) as response:
+                    if response.status != 204:
+                        raise Exception(f"HTTP {response.status}")
+            except urllib.error.HTTPError as e:
+                raise Exception(f"HTTP error {e.code}: {e.reason}")
+
+            result.set_points_written(len(points))
+            logger.info(f"Wrote {len(points)} points to InfluxDB")
+
         except Exception as e:
+            logger.error(f"Failed to write: {e}")
             import traceback
-            logger.error(f"Failed to write to InfluxDB: {e}")
             logger.error(f"Stack: {traceback.format_exc()}")
             result.mark_failed(str(e))
 
         return result
 
     def _build_point(self, record: Dict[str, Any]) -> Optional[Point]:
-        """Build InfluxDB point from record.
-        
-        Args:
-            record: Data record
-            
-        Returns:
-            InfluxDB Point or None
-        """
+        """Build point from record."""
         try:
-            measurement = record.get('_measurement', 'storage')
-            
-            # Create point
+            measurement = record.get('_measurement', record.get('measurement', 'unknown'))
             point = Point(measurement)
             
             # Add tags
-            for key, value in record.get('tags', {}).items():
-                if value is not None:
-                    point.tag(key, str(value))
+            for key, value in record.items():
+                if key.startswith('_tag_'):
+                    point.tag(key[5:], str(value))
+                elif key in ['pfmHostName', 'agentInstanceName', 'storageId']:
+                    if value is not None:
+                        point.tag(key, str(value))
             
             # Add fields
-            for key, value in record.get('fields', {}).items():
-                if value is not None:
-                    if isinstance(value, (int, float)):
-                        point.field(key, value)
-                    elif isinstance(value, bool):
-                        point.field(key, value)
-                    else:
-                        point.field(key, str(value))
+            for key, value in record.items():
+                if key.startswith('_'):
+                    continue
+                if value is None:
+                    continue
+                if isinstance(value, bool):
+                    point.field(key, value)
+                elif isinstance(value, int):
+                    point.field(key, value)
+                elif isinstance(value, float):
+                    point.field(key, value)
+                elif isinstance(value, str):
+                    try:
+                        point.field(key, int(value))
+                    except:
+                        try:
+                            point.field(key, float(value))
+                        except:
+                            point.field(key, value)
+                else:
+                    point.field(key, str(value))
             
-            return point
-            
+            return point if point._fields else None
         except Exception as e:
-            logger.error(f"Failed to build point: {e}")
+            logger.error(f"Build point failed: {e}")
             return None
-    
-    def query(self, query: str) -> List[Dict[str, Any]]:
-        """Query data from InfluxDB.
-        
-        Args:
-            query: InfluxQL query
-            
-        Returns:
-            Query results
-        """
-        try:
-            query_api = self._client.query_api()
-            result = query_api.query_data_frame(query)
-            
-            if result.empty:
-                return []
-            
-            return result.to_dict(orient='records')
-            
-        except Exception as e:
-            logger.error(f"Query failed: {e}")
-            return []
-    
+
     def close(self):
-        """Close the InfluxDB connection."""
-        if self._client:
-            self._client.close()
-            logger.info("Closed InfluxDB connection")
+        """Close connection."""
+        self._connected = False
+        logger.info("Closed InfluxDB connection")
