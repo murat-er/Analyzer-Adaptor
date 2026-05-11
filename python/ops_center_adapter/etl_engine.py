@@ -13,6 +13,7 @@ import requests
 from .config import Config
 from .definition_reader import DefinitionReader, EtlDefinition
 from .custom_logic_handler import CustomLogicHandler
+from .custom_logic_handler import CustomLogicHandler
 
 
 logger = logging.getLogger(__name__)
@@ -31,6 +32,7 @@ class EtlEngine:
         self._definition_reader = DefinitionReader(config.definition_dir)
         
         self._session = requests.Session()
+        self._custom_handler = CustomLogicHandler(config, self)
         
         # Initialize custom logic handler
         self._custom_handler = CustomLogicHandler(config, self)
@@ -113,6 +115,19 @@ class EtlEngine:
         
         return records
     
+    def call_api(self, instance, record_name, extract_type, fields, time_range):
+        """Wrapper for custom logic handler."""
+        from datetime import datetime
+        try:
+            start = datetime.fromisoformat(time_range['start'].replace('Z', '+00:00'))
+            end = datetime.fromisoformat(time_range['end'].replace('Z', '+00:00'))
+            tr = (start, end)
+            return self._call_ops_center_api(instance, record_name, [extract_type], fields, tr)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"call_api failed: {e}")
+            return []
+
     def _call_ops_center_api(
         self,
         instance: Dict[str, Any],

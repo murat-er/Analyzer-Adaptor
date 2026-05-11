@@ -41,6 +41,7 @@ class EtlDefinition:
     load_target_measurement: str
     extract_targets: List[ExtractTarget]
     transform: TransformDefinition
+    _definition: Dict = None
     _definition: Dict[str, Any] = None
 
 

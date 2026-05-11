@@ -16,7 +16,7 @@ class CustomLogicHandler:
     
     def __init__(self, config, ops_client):
         self._config = config
-        self._ops_client = ops_client
+        self._ops = ops_client
     
     def process(self, etl_key: str, instance: Dict[str, Any], definition: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Process custom logic for given etl_key.
@@ -57,8 +57,8 @@ class CustomLogicHandler:
             
             # Extract base data
             # 1. Get PD_LHGC - Host Group to LDEV mapping
-            host_ldev = self._ops_client.extract(
-                instance_id=instance_id,
+            host_ldev = self._ops._call_ops_center_api(
+                
                 record_name='PD_LHGC',
                 extract_type='latest',
                 fields=['DATETIME', 'HOST_GROUP_NAME', 'LDEV_NUMBER'],
@@ -66,8 +66,8 @@ class CustomLogicHandler:
             )
             
             # 2. Get PI_LDS - LDEV statistics (history)
-            ldev_stats = self._ops_client.extract(
-                instance_id=instance_id,
+            ldev_stats = self._ops._call_ops_center_api(
+                
                 record_name='PI_LDS',
                 extract_type='history',
                 fields=['DATETIME', 'LDEV_NUMBER', 'READ_IO_RATE', 'WRITE_IO_RATE', 
@@ -78,8 +78,8 @@ class CustomLogicHandler:
             )
             
             # 3. Get PI_LDE - LDEV extended stats
-            ldev_ext = self._ops_client.extract(
-                instance_id=instance_id,
+            ldev_ext = self._ops._call_ops_center_api(
+                
                 record_name='PI_LDE',
                 extract_type='history',
                 fields=['DATETIME', 'LDEV_NUMBER', 'RANDOM_READ_IO_RATE', 'SEQUENTIAL_READ_IO_RATE',
@@ -88,8 +88,8 @@ class CustomLogicHandler:
             )
             
             # 4. Get PD_LDC - LDEV configuration
-            ldev_conf = self._ops_client.extract(
-                instance_id=instance_id,
+            ldev_conf = self._ops._call_ops_center_api(
+                
                 record_name='PD_LDC',
                 extract_type='latest',
                 fields=['DATETIME', 'LDEV_NUMBER', 'NVM_NAMESPACE_ID'],
@@ -191,8 +191,8 @@ class CustomLogicHandler:
             instance_id = instance.get('instance_id', '')
             
             # Extract data
-            ldev_stats = self._ops_client.extract(
-                instance_id=instance_id,
+            ldev_stats = self._ops._call_ops_center_api(
+                
                 record_name='PI_LDS',
                 extract_type='history',
                 fields=['DATETIME', 'LDEV_NUMBER', 'READ_RESPONSE_RATE', 'READ_IO_RATE',
@@ -202,16 +202,16 @@ class CustomLogicHandler:
                 time_range=time_range
             )
             
-            ldev_ext = self._ops_client.extract(
-                instance_id=instance_id,
+            ldev_ext = self._ops._call_ops_center_api(
+                
                 record_name='PI_LDE',
                 extract_type='history',
                 fields=['DATETIME', 'LDEV_NUMBER', 'RANDOM_READ_IO_RATE', 'RANDOM_WRITE_IO_RATE'],
                 time_range=time_range
             )
             
-            host_ldev = self._ops_client.extract(
-                instance_id=instance_id,
+            host_ldev = self._ops._call_ops_center_api(
+                
                 record_name='PD_LHGC',
                 extract_type='latest',
                 fields=['DATETIME', 'HOST_GROUP_NAME', 'LDEV_NUMBER'],
