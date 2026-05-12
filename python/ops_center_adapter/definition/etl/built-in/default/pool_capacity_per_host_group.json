@@ -1,0 +1,135 @@
+{
+  "type": "custom_logic",
+  "etlKey": "pool_capacity_per_host_group",
+  "definition": {
+    "logicFactoryClass": "com.hitachi.software.ias.spectre.core.etl.ctl.iaa.impl.def.custom.BackwardCompatibleEtlDefinitionFactory",
+    "factoryParameter": {
+      "loadTargetMeasurement": "storage_pool_capacity_per_host_group",
+      "extractTargets": [
+        {
+          "recordName": "PD_LHGC",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "COLLECTION_TIME",
+            "LDEV_NUMBER",
+            "HOST_GROUP_NAME"
+          ],
+          "indexes": [
+            [
+              "COLLECTION_TIME",
+              "LDEV_NUMBER",
+              "HOST_GROUP_NAME"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_VVC",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "DATETIME",
+            "COLLECTION_TIME",
+            "LDEV_NUMBER",
+            "POOL_ID",
+            "FREE_CAPACITY",
+            "USED_CAPACITY",
+            "VIRTUAL_VOLUME_CAPACITY"
+          ],
+          "indexes": [
+            [
+              "COLLECTION_TIME",
+              "POOL_ID"
+            ],
+            [
+              "COLLECTION_TIME",
+              "LDEV_NUMBER"
+            ],
+            [
+              "DATETIME",
+              "POOL_ID"
+            ]
+          ]
+        },
+        {
+          "recordName": "PD_PLC",
+          "extractType": [
+            "history"
+          ],
+          "fields": [
+            "COLLECTION_TIME",
+            "POOL_ID",
+            "POOL_NAME"
+          ],
+          "indexes": []
+        },
+        {
+          "recordName": "PD_LDC",
+          "extractType": [
+            "latest"
+          ],
+          "fields": [
+            "DATETIME",
+            "LDEV_NUMBER",
+            "NVM_NAMESPACE_ID"
+          ],
+          "indexes": [
+            [
+              "LDEV_NUMBER"
+            ]
+          ]
+        }
+      ],
+      "transformCandidates": [
+        {
+          "conditionSql": "SELECT CASE WHEN COUNT(*) >= 1 THEN TRUE ELSE FALSE END AS CONDITION FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PD_LDC_LATEST' AND COLUMN_NAME = 'NVM_NAMESPACE_ID'",
+          "conditionColumn": "CONDITION",
+          "sql": "WITH HG_AND_LDEV AS( SELECT DISTINCT PD_LHGC.COLLECTION_TIME, PD_LHGC.LDEV_NUMBER, PD_LHGC.HOST_GROUP_NAME FROM PD_LHGC JOIN PD_LDC_LATEST ON PD_LHGC.LDEV_NUMBER = PD_LDC_LATEST.LDEV_NUMBER WHERE PD_LDC_LATEST.NVM_NAMESPACE_ID IS NULL ) SELECT PD_VVC.DATETIME, PD_VVC.POOL_ID, CAST(SUM(PD_VVC.FREE_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_FREE_CAPACITY, CAST(SUM(PD_VVC.USED_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_USED_CAPACITY, CAST(SUM(PD_VVC.VIRTUAL_VOLUME_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_VIRTUAL_VOLUME_CAPACITY, CASE WHEN PD_PLC.POOL_NAME IS NULL THEN PD_PLC.POOL_ID ELSE PD_PLC.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC.POOL_NAME IS NULL THEN '-' ELSE PD_PLC.POOL_NAME END, '(', PD_PLC.POOL_ID, ')' ) AS POOL_DISPLAY_NAME, HG_AND_LDEV.HOST_GROUP_NAME FROM PD_VVC JOIN PD_PLC ON PD_VVC.COLLECTION_TIME = PD_PLC.COLLECTION_TIME AND PD_VVC.POOL_ID = PD_PLC.POOL_ID LEFT OUTER JOIN HG_AND_LDEV ON PD_VVC.COLLECTION_TIME = HG_AND_LDEV.COLLECTION_TIME AND PD_VVC.LDEV_NUMBER = HG_AND_LDEV.LDEV_NUMBER WHERE PD_VVC.LDEV_NUMBER NOT IN (SELECT LDEV_NUMBER FROM PD_LDC_LATEST WHERE PD_LDC_LATEST.NVM_NAMESPACE_ID IS NOT NULL) GROUP BY PD_VVC.DATETIME, PD_VVC.POOL_ID, PD_PLC.POOL_NAME, HG_AND_LDEV.HOST_GROUP_NAME;",
+          "usePreviousMapping": false,
+          "timestampColName": "DATETIME",
+          "tagKeyToColNames": [
+            {
+              "tagKey": "pool_id",
+              "queryColName": "POOL_ID"
+            },
+            {
+              "tagKey": "pool_name",
+              "queryColName": "NULL_IGNORED_POOL_NAME"
+            },
+            {
+              "tagKey": "pool_display_name",
+              "queryColName": "POOL_DISPLAY_NAME"
+            },
+            {
+              "tagKey": "host_group_name",
+              "queryColName": "HOST_GROUP_NAME"
+            }
+          ],
+          "fieldKeyToColNames": [
+            {
+              "fieldKey": "sum_of_virtual_volume_free_capacity_in_gibibyte",
+              "queryColName": "SUM_FREE_CAPACITY"
+            },
+            {
+              "fieldKey": "sum_of_virtual_volume_used_capacity_in_gibibyte",
+              "queryColName": "SUM_USED_CAPACITY"
+            },
+            {
+              "fieldKey": "sum_of_virtual_volume_subscribed_capacity_in_gibibyte",
+              "queryColName": "SUM_VIRTUAL_VOLUME_CAPACITY"
+            }
+          ]
+        },
+        {
+          "conditionSql": "SELECT TRUE AS CONDITION",
+          "conditionColumn": "CONDITION",
+          "sql": "WITH HG_AND_LDEV AS( SELECT DISTINCT PD_LHGC.COLLECTION_TIME, PD_LHGC.LDEV_NUMBER, PD_LHGC.HOST_GROUP_NAME FROM PD_LHGC) SELECT PD_VVC.DATETIME, PD_VVC.POOL_ID, CAST(SUM(PD_VVC.FREE_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_FREE_CAPACITY, CAST(SUM(PD_VVC.USED_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_USED_CAPACITY, CAST(SUM(PD_VVC.VIRTUAL_VOLUME_CAPACITY) / 1024 AS DOUBLE PRECISION) AS SUM_VIRTUAL_VOLUME_CAPACITY, CASE WHEN PD_PLC.POOL_NAME IS NULL THEN PD_PLC.POOL_ID ELSE PD_PLC.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC.POOL_NAME IS NULL THEN '-' ELSE PD_PLC.POOL_NAME END, '(', PD_PLC.POOL_ID, ')' ) AS POOL_DISPLAY_NAME, HG_AND_LDEV.HOST_GROUP_NAME FROM PD_VVC JOIN PD_PLC ON PD_VVC.COLLECTION_TIME = PD_PLC.COLLECTION_TIME AND PD_VVC.POOL_ID = PD_PLC.POOL_ID LEFT OUTER JOIN HG_AND_LDEV ON PD_VVC.COLLECTION_TIME = HG_AND_LDEV.COLLECTION_TIME AND PD_VVC.LDEV_NUMBER = HG_AND_LDEV.LDEV_NUMBER GROUP BY PD_VVC.DATETIME, PD_VVC.POOL_ID, PD_PLC.POOL_NAME, HG_AND_LDEV.HOST_GROUP_NAME;",
+          "timestampColName": "DATETIME",
+          "usePreviousMapping": true
+        }
+      ]
+    }
+  }
+}

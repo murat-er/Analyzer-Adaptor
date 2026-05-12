@@ -1,0 +1,162 @@
+{
+  "type": "simple",
+  "etlKey": "pool_capacity",
+  "definition": {
+    "loadTargetMeasurement": "storage_pool",
+    "extractTargets": [
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "COLLECTION_TIME",
+          "POOL_ID",
+          "POOL_NAME",
+          "ATTRIBUTE",
+          "PHYSICAL_CAPACITY_TOTAL",
+          "PHYSICAL_CAPACITY_FREE",
+          "PHYSICAL_CAPACITY_USED",
+          "PHYSICAL_CAPACITY_USAGE_RATE",
+          "TOTAL_ACTUAL_CAPACITY",
+          "TOTAL_MANAGED_CAPACITY",
+          "FREE_CAPACITY",
+          "USED_CAPACITY",
+          "USAGE_RATE",
+          "DKC_SAVING_CAPACITY",
+          "FMC_POOL_CAPACITY_SAVING",
+          "SAVING_CAPACITY",
+          "DATA_VOLUME_USED_CAPACITY",
+          "AUTO_EXPANSION"
+        ],
+        "indexes": [
+          [
+            "DATETIME",
+            "POOL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_VVC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "COLLECTION_TIME",
+          "POOL_ID",
+          "USED_CAPACITY"
+        ],
+        "indexes": [
+          [
+            "COLLECTION_TIME",
+            "POOL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_PEFF",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "COLLECTION_TIME",
+          "POOL_ID",
+          "TOTAL_EFFICIENCY_RATIO"
+        ],
+        "indexes": [
+          [
+            "COLLECTION_TIME",
+            "POOL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "WITH POOL_DP_VOL_CAP AS( SELECT PD_PLC.DATETIME, PD_PLC.POOL_ID, CAST(SUM(PD_VVC.USED_CAPACITY) / 1024 AS DOUBLE PRECISION) AS USED_CAPACITY FROM PD_PLC JOIN PD_VVC ON PD_PLC.COLLECTION_TIME = PD_VVC.COLLECTION_TIME AND PD_PLC.POOL_ID = PD_VVC.POOL_ID GROUP BY PD_PLC.DATETIME, PD_PLC.POOL_ID) SELECT PD_PLC.DATETIME, PD_PLC.POOL_ID, CASE WHEN PD_PLC.POOL_NAME IS NULL THEN PD_PLC.POOL_ID ELSE PD_PLC.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC.POOL_NAME IS NULL THEN '-' ELSE PD_PLC.POOL_NAME END, '(', PD_PLC.POOL_ID, ')' ) AS POOL_DISPLAY_NAME, PD_PLC.PHYSICAL_CAPACITY_TOTAL, PD_PLC.PHYSICAL_CAPACITY_FREE, PD_PLC.PHYSICAL_CAPACITY_USED, PD_PLC.PHYSICAL_CAPACITY_USAGE_RATE, PD_PLC.TOTAL_MANAGED_CAPACITY, PD_PLC.TOTAL_ACTUAL_CAPACITY AS LOGICAL_CAPACITY_TOTAL, PD_PLC.FREE_CAPACITY AS LOGICAL_CAPACITY_FREE, PD_PLC.USED_CAPACITY AS LOGICAL_CAPACITY_USED, PD_PLC.USAGE_RATE AS LOGICAL_CAPACITY_USAGE_RATE, CASE WHEN PD_PLC.ATTRIBUTE LIKE '%(Tiering)' THEN 1 ELSE 0 END AS TIER_ENABLE, CASE WHEN PD_PLC.DKC_SAVING_CAPACITY > 0 THEN PD_PLC.DKC_SAVING_CAPACITY ELSE null END AS DKC_SAVING_CAPACITY, CASE WHEN PD_PLC.FMC_POOL_CAPACITY_SAVING > 0 THEN PD_PLC.FMC_POOL_CAPACITY_SAVING ELSE null END AS FMC_POOL_CAPACITY_SAVING, CASE WHEN PD_PLC.SAVING_CAPACITY > 0 THEN PD_PLC.SAVING_CAPACITY ELSE null END AS SAVING_CAPACITY, CASE WHEN PD_PLC.DATA_VOLUME_USED_CAPACITY >= 0 THEN PD_PLC.DATA_VOLUME_USED_CAPACITY ELSE POOL_DP_VOL_CAP.USED_CAPACITY END AS DATA_VOLUME_USED_CAPACITY, CASE WHEN PD_PLC.AUTO_EXPANSION = 'Enable' THEN 1 WHEN PD_PLC.AUTO_EXPANSION = 'Disable' THEN 0 ELSE -1 END AS AUTO_EXPANSION, CASE WHEN PD_PEFF.TOTAL_EFFICIENCY_RATIO >= 0 THEN PD_PEFF.TOTAL_EFFICIENCY_RATIO ELSE null END AS TOTAL_EFFICIENCY_RATIO FROM PD_PLC LEFT OUTER JOIN PD_PEFF ON PD_PLC.COLLECTION_TIME = PD_PEFF.COLLECTION_TIME AND PD_PLC.POOL_ID = PD_PEFF.POOL_ID LEFT OUTER JOIN POOL_DP_VOL_CAP ON PD_PLC.DATETIME = POOL_DP_VOL_CAP.DATETIME AND PD_PLC.POOL_ID = POOL_DP_VOL_CAP.POOL_ID;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "pool_id",
+          "queryColName": "POOL_ID"
+        },
+        {
+          "tagKey": "pool_name",
+          "queryColName": "NULL_IGNORED_POOL_NAME"
+        },
+        {
+          "tagKey": "pool_display_name",
+          "queryColName": "POOL_DISPLAY_NAME"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "tiering_enabled",
+          "queryColName": "TIER_ENABLE"
+        },
+        {
+          "fieldKey": "total_physical_capacity_in_gibibyte",
+          "queryColName": "PHYSICAL_CAPACITY_TOTAL"
+        },
+        {
+          "fieldKey": "free_physical_capacity_in_gibibyte",
+          "queryColName": "PHYSICAL_CAPACITY_FREE"
+        },
+        {
+          "fieldKey": "physical_usage_in_gibibyte",
+          "queryColName": "PHYSICAL_CAPACITY_USED"
+        },
+        {
+          "fieldKey": "physical_usage_in_percent",
+          "queryColName": "PHYSICAL_CAPACITY_USAGE_RATE"
+        },
+        {
+          "fieldKey": "subscribed_capacity_in_gibibyte",
+          "queryColName": "TOTAL_MANAGED_CAPACITY"
+        },
+        {
+          "fieldKey": "total_logical_capacity_in_gibibyte",
+          "queryColName": "LOGICAL_CAPACITY_TOTAL"
+        },
+        {
+          "fieldKey": "free_logical_capacity_in_gibibyte",
+          "queryColName": "LOGICAL_CAPACITY_FREE"
+        },
+        {
+          "fieldKey": "logical_usage_in_gibibyte",
+          "queryColName": "LOGICAL_CAPACITY_USED"
+        },
+        {
+          "fieldKey": "logical_usage_in_percent",
+          "queryColName": "LOGICAL_CAPACITY_USAGE_RATE"
+        },
+        {
+          "fieldKey": "software_saving_capacity_in_gibibyte",
+          "queryColName": "DKC_SAVING_CAPACITY"
+        },
+        {
+          "fieldKey": "hardware_saving_capacity_in_gibibyte",
+          "queryColName": "FMC_POOL_CAPACITY_SAVING"
+        },
+        {
+          "fieldKey": "total_saving_capacity_in_gibibyte",
+          "queryColName": "SAVING_CAPACITY"
+        },
+        {
+          "fieldKey": "data_volumes_usage_in_gibibyte",
+          "queryColName": "DATA_VOLUME_USED_CAPACITY"
+        },
+        {
+          "fieldKey": "auto_expansion_enabled",
+          "queryColName": "AUTO_EXPANSION"
+        },
+        {
+          "fieldKey": "total_efficiency_ratio",
+          "queryColName": "TOTAL_EFFICIENCY_RATIO"
+        }
+      ]
+    }
+  }
+}

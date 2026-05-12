@@ -1,0 +1,94 @@
+{
+  "type": "simple",
+  "etlKey": "pool_performance",
+  "definition": {
+    "loadTargetMeasurement": "storage_pool",
+    "extractTargets": [
+      {
+        "recordName": "PI_PLS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "POOL_ID",
+          "READ_IO_RATE",
+          "WRITE_IO_RATE",
+          "READ_RESPONSE_RATE",
+          "WRITE_RESPONSE_RATE",
+          "READ_XFER_RATE",
+          "WRITE_XFER_RATE"
+        ],
+        "indexes": [
+        ]
+      },
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "POOL_ID",
+          "POOL_NAME"
+        ],
+        "indexes": [
+          [
+            "POOL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PI_PLS.DATETIME, PI_PLS.POOL_ID, CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN PI_PLS.POOL_ID ELSE PD_PLC_LATEST.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN '-' ELSE PD_PLC_LATEST.POOL_NAME END, '(', PI_PLS.POOL_ID, ')') AS POOL_DISPLAY_NAME, PI_PLS.READ_IO_RATE, PI_PLS.WRITE_IO_RATE, PI_PLS.READ_IO_RATE + PI_PLS.WRITE_IO_RATE AS TOTAL_IO_RATE, CASE PI_PLS.READ_IO_RATE WHEN 0 THEN NULL ELSE PI_PLS.READ_RESPONSE_RATE END AS ZERO_IGNORED_READ_RESPONSE_TIME, CASE PI_PLS.WRITE_IO_RATE WHEN 0 THEN NULL ELSE PI_PLS.WRITE_RESPONSE_RATE END AS ZERO_IGNORED_WRITE_RESPONSE_TIME, PI_PLS.READ_XFER_RATE, PI_PLS.WRITE_XFER_RATE, PI_PLS.READ_XFER_RATE + PI_PLS.WRITE_XFER_RATE AS TOTAL_XFER_RATE FROM PI_PLS JOIN PD_PLC_LATEST ON PI_PLS.POOL_ID = PD_PLC_LATEST.POOL_ID;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "pool_id",
+          "queryColName": "PI_PLS.POOL_ID"
+        },
+        {
+          "tagKey": "pool_name",
+          "queryColName": "NULL_IGNORED_POOL_NAME"
+        },
+        {
+          "tagKey": "pool_display_name",
+          "queryColName": "POOL_DISPLAY_NAME"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_read_io_per_sec",
+          "queryColName": "PI_PLS.READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_write_io_per_sec",
+          "queryColName": "PI_PLS.WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_io_per_sec",
+          "queryColName": "TOTAL_IO_RATE"
+        },
+        {
+          "fieldKey": "avg_of_read_response_time_in_micro_sec",
+          "queryColName": "ZERO_IGNORED_READ_RESPONSE_TIME"
+        },
+        {
+          "fieldKey": "avg_of_write_response_time_in_micro_sec",
+          "queryColName": "ZERO_IGNORED_WRITE_RESPONSE_TIME"
+        },
+        {
+          "fieldKey": "sum_of_read_transfer_mebibytes_per_sec",
+          "queryColName": "PI_PLS.READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_write_transfer_mebibytes_per_sec",
+          "queryColName": "PI_PLS.WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_XFER_RATE"
+        }
+      ]
+    }
+  }
+}

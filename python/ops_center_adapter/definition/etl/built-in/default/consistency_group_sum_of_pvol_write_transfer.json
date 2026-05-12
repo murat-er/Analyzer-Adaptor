@@ -1,0 +1,117 @@
+{
+  "type": "simple",
+  "etlKey": "consistency_group_sum_of_pvol_write_transfer",
+  "definition": {
+    "loadTargetMeasurement": "storage_consistency_group",
+    "extractTargets": [
+      {
+        "recordName": "PD",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DKC_SERIAL_NUMBER"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_LDCC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "P_VOL_DKC_SERIAL_NUMBER",
+          "S_VOL_DKC_SERIAL_NUMBER",
+          "CTG_ID",
+          "MU_NUMBER",
+          "M_JOURNAL_ID",
+          "R_JOURNAL_ID",
+          "P_VOL_DKC_MODEL",
+          "S_VOL_DKC_MODEL",
+          "PATH_GROUP_ID",
+          "P_VOL_LDEV_NUMBER"
+        ],
+        "indexes": [
+          [
+            "CTG_ID"
+          ],
+          [
+            "P_VOL_LDEV_NUMBER"
+          ],
+          [
+            "P_VOL_DKC_SERIAL_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PI_LDS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "WRITE_XFER_RATE"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER",
+            "DATETIME"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "WITH TOTAL_PVOL_TX AS(SELECT PI_LDS.DATETIME, PD_LDCC_LATEST.CTG_ID, PD_LATEST.DKC_SERIAL_NUMBER, CAST(SUM(PI_LDS.WRITE_XFER_RATE) AS DOUBLE PRECISION) AS WRITE_XFER_RATE FROM PD_LATEST JOIN PD_LDCC_LATEST ON PD_LATEST.DKC_SERIAL_NUMBER = PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER JOIN PI_LDS ON PI_LDS.LDEV_NUMBER = PD_LDCC_LATEST.P_VOL_LDEV_NUMBER WHERE PD_LDCC_LATEST.CTG_ID IS NOT NULL GROUP BY PI_LDS.DATETIME, PD_LDCC_LATEST.CTG_ID, PD_LATEST.DKC_SERIAL_NUMBER) SELECT DISTINCT TOTAL_PVOL_TX.DATETIME, CONCAT(PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, '_', PD_LDCC_LATEST.CTG_ID) AS UNIQUE_KEY, PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.S_VOL_DKC_SERIAL_NUMBER, PD_LDCC_LATEST.CTG_ID, PD_LDCC_LATEST.MU_NUMBER, PD_LDCC_LATEST.M_JOURNAL_ID, PD_LDCC_LATEST.R_JOURNAL_ID, PD_LDCC_LATEST.P_VOL_DKC_MODEL, PD_LDCC_LATEST.S_VOL_DKC_MODEL, PD_LDCC_LATEST.PATH_GROUP_ID, TOTAL_PVOL_TX.WRITE_XFER_RATE FROM PD_LDCC_LATEST JOIN TOTAL_PVOL_TX ON PD_LDCC_LATEST.CTG_ID = TOTAL_PVOL_TX.CTG_ID AND PD_LDCC_LATEST.P_VOL_DKC_SERIAL_NUMBER = TOTAL_PVOL_TX.DKC_SERIAL_NUMBER;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "unique_key",
+          "queryColName": "UNIQUE_KEY"
+        },
+        {
+          "tagKey": "pvol_storage_serial_number",
+          "queryColName": "P_VOL_DKC_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "svol_storage_serial_number",
+          "queryColName": "S_VOL_DKC_SERIAL_NUMBER"
+        },
+        {
+          "tagKey": "consistency_group_id",
+          "queryColName": "CTG_ID"
+        },
+        {
+          "tagKey": "mirror_unit_number",
+          "queryColName": "MU_NUMBER"
+        },
+        {
+          "tagKey": "master_journal_id",
+          "queryColName": "M_JOURNAL_ID"
+        },
+        {
+          "tagKey": "restore_journal_id",
+          "queryColName": "R_JOURNAL_ID"
+        },
+        {
+          "tagKey": "pvol_storage_model",
+          "queryColName": "P_VOL_DKC_MODEL"
+        },
+        {
+          "tagKey": "svol_storage_model",
+          "queryColName": "S_VOL_DKC_MODEL"
+        },
+        {
+          "tagKey": "path_group_id",
+          "queryColName": "PATH_GROUP_ID"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_pvol_write_transfer_mebibytes_per_sec",
+          "queryColName": "WRITE_XFER_RATE"
+        }
+      ]
+    }
+  }
+}

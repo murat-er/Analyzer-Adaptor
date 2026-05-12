@@ -1,0 +1,87 @@
+{
+  "type": "simple",
+  "etlKey": "storage_tier_performance",
+  "definition": {
+    "loadTargetMeasurement": "storage_pool_tier",
+    "extractTargets": [
+      {
+        "recordName": "PI_PLTI",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "RECORD_TIME",
+          "POOL_ID",
+          "TIER_TYPE",
+          "AVG_IO_RATE"
+        ],
+        "indexes": []
+      },
+      {
+        "recordName": "PD_PLTS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "RECORD_TIME",
+          "POOL_ID",
+          "AVG_IOPS_UTILIZATION_RATE"
+        ],
+        "indexes": [
+          [
+            "RECORD_TIME",
+            "POOL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "POOL_ID",
+          "POOL_NAME"
+        ],
+        "indexes": [
+          [
+            "POOL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PI_PLTI.DATETIME, PI_PLTI.RECORD_TIME, PI_PLTI.POOL_ID, CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN PI_PLTI.POOL_ID ELSE PD_PLC_LATEST.POOL_NAME END AS NULL_IGNORED_POOL_NAME, CONCAT( CASE WHEN PD_PLC_LATEST.POOL_NAME IS NULL THEN '-' ELSE PD_PLC_LATEST.POOL_NAME END, '(', PI_PLTI.POOL_ID, ')') AS POOL_DISPLAY_NAME, PI_PLTI.TIER_TYPE, PI_PLTI.AVG_IO_RATE, PD_PLTS.AVG_IOPS_UTILIZATION_RATE FROM PI_PLTI LEFT JOIN PD_PLTS ON PI_PLTI.RECORD_TIME = PD_PLTS.RECORD_TIME AND PI_PLTI.POOL_ID = PD_PLTS.POOL_ID JOIN PD_PLC_LATEST ON PI_PLTI.POOL_ID = PD_PLC_LATEST.POOL_ID WHERE PI_PLTI.TIER_TYPE != '_Total';",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "pool_id",
+          "queryColName": "POOL_ID"
+        },
+        {
+          "tagKey": "pool_name",
+          "queryColName": "NULL_IGNORED_POOL_NAME"
+        },
+        {
+          "tagKey": "pool_display_name",
+          "queryColName": "POOL_DISPLAY_NAME"
+        },
+        {
+          "tagKey": "tier_type",
+          "queryColName": "TIER_TYPE"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "avg_of_total_io_per_sec",
+          "queryColName": "AVG_IO_RATE"
+        },
+        {
+          "fieldKey": "avg_of_io_utilization_rate_in_percent",
+          "queryColName": "AVG_IOPS_UTILIZATION_RATE"
+        }
+      ]
+    }
+  }
+}

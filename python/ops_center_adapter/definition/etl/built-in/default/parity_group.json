@@ -1,0 +1,89 @@
+{
+  "type": "simple",
+  "etlKey": "parity_group",
+  "definition": {
+    "loadTargetMeasurement": "storage_parity_group",
+    "extractTargets": [
+      {
+        "recordName": "PI_RGS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "RAID_GROUP_NUMBER",
+          "BUSY_RATE",
+          "READ_IO_RATE",
+          "WRITE_IO_RATE",
+          "READ_XFER_RATE",
+          "WRITE_XFER_RATE",
+          "READ_IO_COUNT",
+          "READ_HIT_RATE"
+        ],
+        "indexes": [
+        ]
+      },
+      {
+        "recordName": "PD_RGC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "RAID_GROUP_NUMBER",
+          "RAID_TYPE",
+          "DRIVE_TYPE"
+        ],
+        "indexes": [
+          [
+            "DATETIME",
+            "RAID_GROUP_NUMBER"
+          ],
+          [
+            "RAID_GROUP_NUMBER"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "SELECT PI_RGS.DATETIME, PI_RGS.RAID_GROUP_NUMBER, PI_RGS.BUSY_RATE, PI_RGS.READ_IO_RATE, PI_RGS.WRITE_IO_RATE, PI_RGS.READ_XFER_RATE, PI_RGS.WRITE_XFER_RATE, CASE PI_RGS.READ_IO_COUNT WHEN 0 THEN NULL ELSE PI_RGS.READ_HIT_RATE END, PD_RGC_LATEST.RAID_TYPE, PD_RGC_LATEST.DRIVE_TYPE FROM PI_RGS JOIN PD_RGC_LATEST ON PI_RGS.RAID_GROUP_NUMBER = PD_RGC_LATEST.RAID_GROUP_NUMBER;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "parity_group_number",
+          "queryColName": "RAID_GROUP_NUMBER"
+        },
+        {
+          "tagKey": "raid_type",
+          "queryColName": "RAID_TYPE"
+        },
+        {
+          "tagKey": "drive_type",
+          "queryColName": "DRIVE_TYPE"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "busy_rate_in_percent",
+          "queryColName": "BUSY_RATE"
+        },
+        {
+          "fieldKey": "read_io_per_sec",
+          "queryColName": "READ_IO_RATE"
+        },
+        {
+          "fieldKey": "write_io_per_sec",
+          "queryColName": "WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "read_transfer_mebibytes_per_sec",
+          "queryColName": "READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "write_transfer_mebibytes_per_sec",
+          "queryColName": "WRITE_XFER_RATE"
+        }
+      ]
+    }
+  }
+}

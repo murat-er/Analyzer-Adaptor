@@ -1,0 +1,116 @@
+{
+  "type": "simple",
+  "etlKey": "storage_pool_capacity_aggregation",
+  "definition": {
+    "loadTargetMeasurement": "storage",
+    "extractTargets": [
+      {
+        "recordName": "PD_PLC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "POOL_ID",
+          "PHYSICAL_CAPACITY_TOTAL",
+          "PHYSICAL_CAPACITY_FREE",
+          "PHYSICAL_CAPACITY_USED",
+          "PHYSICAL_CAPACITY_USAGE_RATE",
+          "TOTAL_ACTUAL_CAPACITY",
+          "TOTAL_MANAGED_CAPACITY",
+          "FREE_CAPACITY",
+          "USED_CAPACITY",
+          "USAGE_RATE",
+          "DKC_SAVING_CAPACITY",
+          "FMC_POOL_CAPACITY_SAVING",
+          "SAVING_CAPACITY",
+          "DATA_VOLUME_USED_CAPACITY",
+          "AUTO_EXPANSION"
+        ],
+        "indexes": [
+          [
+            "DATETIME",
+            "POOL_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_VVC",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "POOL_ID",
+          "USED_CAPACITY"
+        ],
+        "indexes": [
+          [
+            "DATETIME",
+            "POOL_ID"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "sql": "WITH POOL_DP_VOL_CAP AS( SELECT PD_PLC.DATETIME, PD_PLC.POOL_ID, CAST(SUM(PD_VVC.USED_CAPACITY) / 1024 AS DOUBLE PRECISION) AS USED_CAPACITY FROM PD_PLC JOIN PD_VVC ON PD_PLC.DATETIME = PD_VVC.DATETIME AND PD_PLC.POOL_ID = PD_VVC.POOL_ID GROUP BY PD_PLC.DATETIME, PD_PLC.POOL_ID) SELECT PD_PLC.DATETIME, CAST(SUM(PD_PLC.PHYSICAL_CAPACITY_TOTAL) AS DOUBLE PRECISION) AS SUM_PHYSICAL_CAPACITY_TOTAL, CAST(SUM(PD_PLC.PHYSICAL_CAPACITY_FREE) AS DOUBLE PRECISION) AS SUM_PHYSICAL_CAPACITY_FREE, CAST(SUM(PD_PLC.PHYSICAL_CAPACITY_USED) AS DOUBLE PRECISION) AS SUM_PHYSICAL_CAPACITY_USED, MAX(PD_PLC.PHYSICAL_CAPACITY_USAGE_RATE) AS MAX_PHYSICAL_CAPACITY_USAGE_RATE, CAST(SUM(PD_PLC.TOTAL_MANAGED_CAPACITY) AS DOUBLE PRECISION) AS SUM_TOTAL_MANAGED_CAPACITY, CAST(SUM(PD_PLC.TOTAL_ACTUAL_CAPACITY) AS DOUBLE PRECISION) AS SUM_LOGICAL_CAPACITY_TOTAL, CAST(SUM(PD_PLC.FREE_CAPACITY) AS DOUBLE PRECISION) AS SUM_LOGICAL_CAPACITY_FREE, CAST(SUM(PD_PLC.USED_CAPACITY) AS DOUBLE PRECISION) AS SUM_LOGICAL_CAPACITY_USED, MAX(PD_PLC.USAGE_RATE) AS MAX_LOGICAL_CAPACITY_USAGE_RATE, CAST(SUM( CASE WHEN PD_PLC.DKC_SAVING_CAPACITY > 0 THEN PD_PLC.DKC_SAVING_CAPACITY ELSE null END ) AS DOUBLE PRECISION) AS SUM_DKC_SAVING_CAPACITY, CAST(SUM( CASE WHEN PD_PLC.FMC_POOL_CAPACITY_SAVING > 0 THEN PD_PLC.FMC_POOL_CAPACITY_SAVING ELSE null END ) AS DOUBLE PRECISION) AS SUM_FMC_POOL_CAPACITY_SAVING, CAST(SUM( CASE WHEN PD_PLC.SAVING_CAPACITY > 0 THEN PD_PLC.SAVING_CAPACITY ELSE null END ) AS DOUBLE PRECISION) AS SUM_SAVING_CAPACITY, CAST(SUM( CASE WHEN PD_PLC.DATA_VOLUME_USED_CAPACITY > 0 THEN PD_PLC.DATA_VOLUME_USED_CAPACITY ELSE POOL_DP_VOL_CAP.USED_CAPACITY END ) AS DOUBLE PRECISION) AS SUM_DATA_VOLUME_USED_CAPACITY FROM PD_PLC LEFT OUTER JOIN POOL_DP_VOL_CAP ON PD_PLC.DATETIME = POOL_DP_VOL_CAP.DATETIME AND PD_PLC.POOL_ID = POOL_DP_VOL_CAP.POOL_ID GROUP BY PD_PLC.DATETIME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_pool_total_physical_capacity_in_gibibyte",
+          "queryColName": "SUM_PHYSICAL_CAPACITY_TOTAL"
+        },
+        {
+          "fieldKey": "sum_of_pool_free_physical_capacity_in_gibibyte",
+          "queryColName": "SUM_PHYSICAL_CAPACITY_FREE"
+        },
+        {
+          "fieldKey": "sum_of_pool_physical_usage_in_gibibyte",
+          "queryColName": "SUM_PHYSICAL_CAPACITY_USED"
+        },
+        {
+          "fieldKey": "max_of_pool_physical_usage_in_percent",
+          "queryColName": "MAX_PHYSICAL_CAPACITY_USAGE_RATE"
+        },
+        {
+          "fieldKey": "sum_of_pool_subscribed_capacity_in_gibibyte",
+          "queryColName": "SUM_TOTAL_MANAGED_CAPACITY"
+        },
+        {
+          "fieldKey": "sum_of_pool_total_logical_capacity_in_gibibyte",
+          "queryColName": "SUM_LOGICAL_CAPACITY_TOTAL"
+        },
+        {
+          "fieldKey": "sum_of_pool_free_logical_capacity_in_gibibyte",
+          "queryColName": "SUM_LOGICAL_CAPACITY_FREE"
+        },
+        {
+          "fieldKey": "sum_of_pool_logical_usage_in_gibibyte",
+          "queryColName": "SUM_LOGICAL_CAPACITY_USED"
+        },
+        {
+          "fieldKey": "max_of_pool_logical_usage_in_percent",
+          "queryColName": "MAX_LOGICAL_CAPACITY_USAGE_RATE"
+        },
+        {
+          "fieldKey": "sum_of_pool_software_saving_capacity_in_gibibyte",
+          "queryColName": "SUM_DKC_SAVING_CAPACITY"
+        },
+        {
+          "fieldKey": "sum_of_pool_hardware_saving_capacity_in_gibibyte",
+          "queryColName": "SUM_FMC_POOL_CAPACITY_SAVING"
+        },
+        {
+          "fieldKey": "sum_of_pool_total_saving_capacity_in_gibibyte",
+          "queryColName": "SUM_SAVING_CAPACITY"
+        },
+        {
+          "fieldKey": "sum_of_pool_data_volumes_usage_in_gibibyte",
+          "queryColName": "SUM_DATA_VOLUME_USED_CAPACITY"
+        }
+      ]
+    }
+  }
+}

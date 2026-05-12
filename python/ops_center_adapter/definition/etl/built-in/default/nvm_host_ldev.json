@@ -1,0 +1,212 @@
+{
+  "type": "optional",
+  "etlKey": "nvm_host_ldev",
+  "definition": {
+    "loadTargetMeasurement": "storage_nvm_host",
+    "extractTargets": [
+      {
+        "recordName": "PI_LDS",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "READ_IO_RATE",
+          "WRITE_IO_RATE",
+          "READ_RESPONSE_RATE",
+          "WRITE_RESPONSE_RATE",
+          "READ_XFER_RATE",
+          "WRITE_XFER_RATE",
+          "READ_MBYTES",
+          "WRITE_MBYTES",
+          "READ_IO_COUNT",
+          "WRITE_IO_COUNT",
+          "READ_HIT_IO_COUNT"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PI_LDE",
+        "extractType": [
+          "history"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "RANDOM_READ_IO_RATE",
+          "SEQUENTIAL_READ_IO_RATE",
+          "RANDOM_WRITE_IO_RATE",
+          "SEQUENTIAL_WRITE_IO_RATE"
+        ],
+        "indexes": [
+          [
+            "DATETIME",
+            "LDEV_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_LDC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "LDEV_NUMBER",
+          "NVM_SUBSYSTEM_ID",
+          "NVM_NAMESPACE_ID"
+        ],
+        "indexes": [
+          [
+            "LDEV_NUMBER"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_NNPC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "NVM_HOST_NQN",
+          "NVM_SUBSYSTEM_ID",
+          "NVM_NAMESPACE_ID"
+        ],
+        "indexes": [
+          [
+            "NVM_SUBSYSTEM_ID",
+            "NVM_NAMESPACE_ID"
+          ]
+        ]
+      },
+      {
+        "recordName": "PD_NHC",
+        "extractType": [
+          "latest"
+        ],
+        "fields": [
+          "DATETIME",
+          "NVM_HOST_NQN",
+          "NVM_HOST_NICKNAME"
+        ],
+        "indexes": [
+          [
+            "NVM_HOST_NQN"
+          ]
+        ]
+      }
+    ],
+    "transform": {
+      "optionalTables": [
+        "PD_NNPC_LATEST",
+        "PD_NHC_LATEST"
+      ],
+      "sql": "SELECT PI_LDS.DATETIME AS DATETIME, DISTINCT_PD_NHC_LATEST.NVM_HOST_NICKNAME AS NVM_HOST_NICKNAME, CAST(SUM(PI_LDS.READ_IO_RATE) AS DOUBLE PRECISION) AS READ_IO_RATE, CAST(SUM(PI_LDS.WRITE_IO_RATE) AS DOUBLE PRECISION) AS WRITE_IO_RATE, CAST(SUM(PI_LDS.READ_IO_RATE + PI_LDS.WRITE_IO_RATE) AS DOUBLE PRECISION) AS TOTAL_IO_RATE, CAST(SUM(PI_LDE.RANDOM_READ_IO_RATE) AS DOUBLE PRECISION) AS RANDOM_READ_IO_RATE, CAST(SUM(PI_LDE.RANDOM_WRITE_IO_RATE) AS DOUBLE PRECISION) AS RANDOM_WRITE_IO_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_READ_IO_RATE) AS DOUBLE PRECISION) AS SEQUENTIAL_READ_IO_RATE, CAST(SUM(PI_LDE.SEQUENTIAL_WRITE_IO_RATE) AS DOUBLE PRECISION) AS SEQUENTIAL_WRITE_IO_RATE, SUM(PI_LDS.READ_IO_COUNT) AS READ_IO_COUNT, CASE SUM(PI_LDS.READ_IO_COUNT) WHEN 0 THEN NULL ELSE SUM(PI_LDS.READ_IO_COUNT) END AS READ_IO_COUNT_ZERO_AS_NULL, SUM(PI_LDS.WRITE_IO_COUNT) AS WRITE_IO_COUNT, CASE SUM(PI_LDS.WRITE_IO_COUNT) WHEN 0 THEN NULL ELSE SUM(PI_LDS.WRITE_IO_COUNT) END AS WRITE_IO_COUNT_ZERO_AS_NULL, CASE SUM(PI_LDS.READ_IO_COUNT + PI_LDS.WRITE_IO_COUNT) WHEN 0 THEN NULL ELSE SUM(PI_LDS.READ_IO_COUNT + PI_LDS.WRITE_IO_COUNT) END AS TOTAL_IO_COUNT_ZERO_AS_NULL, SUM(PI_LDS.READ_HIT_IO_COUNT) AS READ_HIT_IO_COUNT, CAST(SUM(PI_LDS.READ_XFER_RATE) AS DOUBLE PRECISION) AS READ_XFER_RATE, CAST(SUM(PI_LDS.WRITE_XFER_RATE) AS DOUBLE PRECISION) AS WRITE_XFER_RATE, CAST(SUM(PI_LDS.READ_XFER_RATE + PI_LDS.WRITE_XFER_RATE) AS DOUBLE PRECISION) AS TOTAL_XFER_RATE, SUM(PI_LDS.READ_MBYTES) AS READ_MBYTES, SUM(PI_LDS.WRITE_MBYTES) AS WRITE_MBYTES, MAX( CASE PI_LDS.READ_IO_COUNT WHEN 0 THEN NULL ELSE CAST(READ_RESPONSE_RATE AS DOUBLE PRECISION) END) AS WORST_READ_RESPONSE_RATE, MAX( CASE PI_LDS.WRITE_IO_COUNT WHEN 0 THEN NULL ELSE CAST(WRITE_RESPONSE_RATE AS DOUBLE PRECISION) END ) AS WORST_WRITE_RESPONSE_RATE, CASE CAST(SUM(READ_IO_COUNT) AS DOUBLE PRECISION) WHEN 0 THEN NULL ELSE CAST(CAST(SUM(READ_MBYTES) AS DOUBLE PRECISION) / SUM(READ_IO_COUNT) AS DOUBLE PRECISION) END AS READ_XFER_PER_IO, CASE CAST(SUM(WRITE_IO_COUNT) AS DOUBLE PRECISION) WHEN 0 THEN NULL ELSE CAST(CAST(SUM(WRITE_MBYTES) AS DOUBLE PRECISION) / SUM(WRITE_IO_COUNT) AS DOUBLE PRECISION) END AS WRITE_XFER_PER_IO FROM ( SELECT DISTINCT CASE WHEN PD_NHC_LATEST.NVM_HOST_NICKNAME IS NOT NULL THEN PD_NHC_LATEST.NVM_HOST_NICKNAME ELSE PD_NHC_LATEST.NVM_HOST_NQN END AS NVM_HOST_NICKNAME, PD_LDC_LATEST.LDEV_NUMBER FROM PD_LDC_LATEST JOIN PD_NNPC_LATEST ON PD_LDC_LATEST.NVM_NAMESPACE_ID = PD_NNPC_LATEST.NVM_NAMESPACE_ID AND PD_LDC_LATEST.NVM_SUBSYSTEM_ID = PD_NNPC_LATEST.NVM_SUBSYSTEM_ID JOIN PD_NHC_LATEST ON PD_NNPC_LATEST.NVM_HOST_NQN = PD_NHC_LATEST.NVM_HOST_NQN ) AS DISTINCT_PD_NHC_LATEST JOIN PI_LDS ON DISTINCT_PD_NHC_LATEST.LDEV_NUMBER = PI_LDS.LDEV_NUMBER LEFT OUTER JOIN PI_LDE ON PI_LDS.DATETIME = PI_LDE.DATETIME AND PI_LDS.LDEV_NUMBER = PI_LDE.LDEV_NUMBER GROUP BY PI_LDS.DATETIME, DISTINCT_PD_NHC_LATEST.NVM_HOST_NICKNAME;",
+      "timestampColName": "DATETIME",
+      "tagKeyToColNames": [
+        {
+          "tagKey": "nvm_host_nickname",
+          "queryColName": "NVM_HOST_NICKNAME"
+        }
+      ],
+      "fieldKeyToColNames": [
+        {
+          "fieldKey": "sum_of_read_io_per_sec",
+          "queryColName": "READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_write_io_per_sec",
+          "queryColName": "WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_total_io_per_sec",
+          "queryColName": "TOTAL_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_read_io_per_sec",
+          "queryColName": "RANDOM_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_random_write_io_per_sec",
+          "queryColName": "RANDOM_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_read_io_per_sec",
+          "queryColName": "SEQUENTIAL_READ_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_sequential_write_io_per_sec",
+          "queryColName": "SEQUENTIAL_WRITE_IO_RATE"
+        },
+        {
+          "fieldKey": "sum_of_read_io_count",
+          "queryColName": "READ_IO_COUNT"
+        },
+        {
+          "fieldKey": "sum_of_read_io_count_zero_as_null",
+          "queryColName": "READ_IO_COUNT_ZERO_AS_NULL"
+        },
+        {
+          "fieldKey": "sum_of_write_io_count",
+          "queryColName": "WRITE_IO_COUNT"
+        },
+        {
+          "fieldKey": "sum_of_write_io_count_zero_as_null",
+          "queryColName": "WRITE_IO_COUNT_ZERO_AS_NULL"
+        },
+        {
+          "fieldKey": "sum_of_total_io_count_zero_as_null",
+          "queryColName": "TOTAL_IO_COUNT_ZERO_AS_NULL"
+        },
+        {
+          "fieldKey": "sum_of_read_hit_io_count",
+          "queryColName": "READ_HIT_IO_COUNT"
+        },
+        {
+          "fieldKey": "sum_of_total_transfer_mebibytes_per_sec",
+          "queryColName": "TOTAL_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_read_transfer_mebibytes_per_sec",
+          "queryColName": "READ_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_write_transfer_mebibytes_per_sec",
+          "queryColName": "WRITE_XFER_RATE"
+        },
+        {
+          "fieldKey": "sum_of_read_transfer_mebibytes",
+          "queryColName": "READ_MBYTES"
+        },
+        {
+          "fieldKey": "sum_of_write_transfer_mebibytes",
+          "queryColName": "WRITE_MBYTES"
+        },
+        {
+          "fieldKey": "max_of_read_response_time_in_micro_sec",
+          "queryColName": "WORST_READ_RESPONSE_RATE"
+        },
+        {
+          "fieldKey": "max_of_write_response_time_in_micro_sec",
+          "queryColName": "WORST_WRITE_RESPONSE_RATE"
+        },
+        {
+          "fieldKey": "avg_of_read_transfer_mebibytes_per_io",
+          "queryColName": "READ_XFER_PER_IO"
+        },
+        {
+          "fieldKey": "avg_of_write_transfer_mebibytes_per_io",
+          "queryColName": "WRITE_XFER_PER_IO"
+        }
+      ],
+      "statusEvaluationDefinitions": [
+      ]
+    }
+  }
+}
